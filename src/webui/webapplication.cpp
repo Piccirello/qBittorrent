@@ -135,7 +135,6 @@ QMap<QString, QMap<QString, WebApplication::Action>> WebApplication::initializeA
     ADD_ACTION(command, getSavePath);
     ADD_ACTION(command, startSearch);
     ADD_ACTION(command, cancelSearch);
-    ADD_ACTION(command, downloadTorrent);
     ADD_ACTION(version, api);
     ADD_ACTION(version, api_min);
     ADD_ACTION(version, qbittorrent);
@@ -989,21 +988,6 @@ void WebApplication::action_command_cancelSearch()
     }
 
     m_searchEngineWeb->cancelSearch();
-    print(QByteArray("Ok."), Http::CONTENT_TYPE_TXT);
-}
-
-void WebApplication::action_command_downloadTorrent()
-{
-    CHECK_URI(0);
-    CHECK_PARAMETERS("siteUrl" << "url");
-    const QString siteUrl = request().posts["siteUrl"];
-    const QString url = request().posts["url"];
-
-    if (url.startsWith("bc://bt/", Qt::CaseInsensitive) || url.startsWith("magnet:", Qt::CaseInsensitive))
-        BitTorrent::Session::instance()->addTorrent(url);
-    else
-        m_searchEngineWeb->downloadTorrent(siteUrl, url);
-
     print(QByteArray("Ok."), Http::CONTENT_TYPE_TXT);
 }
 

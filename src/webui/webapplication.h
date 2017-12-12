@@ -104,7 +104,6 @@ private:
     void action_command_getSavePath();
     void action_command_startSearch();
     void action_command_cancelSearch();
-    void action_command_downloadTorrent();
     void action_version_api();
     void action_version_api_min();
     void action_version_qbittorrent();

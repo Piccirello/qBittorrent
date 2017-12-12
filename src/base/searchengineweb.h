@@ -82,7 +82,6 @@ public:
 
     void startSearch(const QString &pattern, const QString &category, const QStringList &usedPlugins);
     void cancelSearch();
-    void downloadTorrent(const QString &siteUrl, const QString &url);
     void readSearchOutput();
     QList<SearchResult> readBufferedSearchOutput();
 

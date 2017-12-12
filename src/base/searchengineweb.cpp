@@ -132,21 +132,6 @@ void SearchEngineWeb::cancelSearch()
     }
 }
 
-void SearchEngineWeb::downloadTorrent(const QString &siteUrl, const QString &url)
-{
-    QProcess *downloadProcess = new QProcess(this);
-    downloadProcess->setEnvironment(QProcess::systemEnvironment());
-    connect(downloadProcess, static_cast<void (QProcess::*)(int)>(&QProcess::finished), this, &SearchEngineWeb::torrentFileDownloadFinished);
-    m_downloaders << downloadProcess;
-    QStringList params {
-        Utils::Fs::toNativePath(engineLocation() + "/nova2dl.py"),
-        siteUrl,
-        url
-    };
-    // Launch search
-    downloadProcess->start(Utils::Misc::pythonExecutable(), params, QIODevice::ReadOnly);
-}
-
 void SearchEngineWeb::readSearchOutput()
 {
     QByteArray output = m_searchProcess->readAllStandardOutput();
