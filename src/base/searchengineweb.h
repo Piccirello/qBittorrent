@@ -78,67 +78,31 @@ public:
     ~SearchEngineWeb();
 
     QStringList allPlugins() const;
-    QStringList enabledPlugins() const;
-    QStringList supportedCategories() const;
-    PluginInfo *pluginInfo(const QString &name) const;
-
     bool isActive() const;
-
-    void enablePlugin(const QString &name, bool enabled = true);
-    void updatePlugin(const QString &name);
-    void installPlugin(const QString &source);
-    bool uninstallPlugin(const QString &name);
-    static void updateIconPath(PluginInfo * const plugin);
-    void checkForUpdates();
 
     void startSearch(const QString &pattern, const QString &category, const QStringList &usedPlugins);
     void cancelSearch();
+    void downloadTorrent(const QString &siteUrl, const QString &url);
     void readSearchOutput();
     QList<SearchResult> readBufferedSearchOutput();
 
-    void downloadTorrent(const QString &siteUrl, const QString &url);
-
     static PluginVersion getPluginVersion(QString filePath);
     static QString categoryFullName(const QString &categoryName);
-    QString pluginFullName(const QString &pluginName);
     static QString pluginsLocation();
 
     QVariant fromValue(const SearchResult &result);
 
 signals:
-    void searchStarted();
-    void searchFinished(bool cancelled);
-    void searchFailed();
-    void newSearchResults(const QList<SearchResult> &results);
-
-    void pluginEnabled(const QString &name, bool enabled);
-    void pluginInstalled(const QString &name);
-    void pluginInstallationFailed(const QString &name, const QString &reason);
-    void pluginUninstalled(const QString &name);
-    void pluginUpdated(const QString &name);
-    void pluginUpdateFailed(const QString &name, const QString &reason);
-
-    void checkForUpdatesFinished(const QHash<QString, PluginVersion> &updateInfo);
-    void checkForUpdatesFailed(const QString &reason);
-
     void torrentFileDownloaded(const QString &path);
 
 private slots:
     void onTimeout();
     void processFinished(int exitcode);
-    void versionInfoDownloaded(const QString &url, const QByteArray &data);
-    void versionInfoDownloadFailed(const QString &url, const QString &reason);
-    void pluginDownloaded(const QString &url, QString filePath);
-    void pluginDownloadFailed(const QString &url, const QString &reason);
     void torrentFileDownloadFinished(int exitcode);
 
 private:
     void update();
-    void updateNova();
     bool parseSearchResult(const QString &line, SearchResult &searchResult);
-    void parseVersionInfo(const QByteArray &info);
-    void installPlugin_impl(const QString &name, const QString &path);
-    bool isUpdateNeeded(QString pluginName, PluginVersion newVersion) const;
 
     static QString engineLocation();
     static QString pluginPath(const QString &name);
@@ -146,13 +110,10 @@ private:
 
     static const QHash<QString, QString> m_categoryNames;
 
-    const QString m_updateUrl;
-
     QHash<QString, PluginInfo*> m_plugins;
     QProcess *m_searchProcess;
     bool m_searchStopped;
     QTimer *m_searchTimeout;
-    QByteArray m_searchResultLineTruncated;
     QList<QProcess*> m_downloaders;
     QQueue<SearchResult> m_stdoutQueue;
 };
