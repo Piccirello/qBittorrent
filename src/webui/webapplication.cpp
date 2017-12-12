@@ -46,6 +46,7 @@
 #include "base/logger.h"
 #include "base/net/downloadmanager.h"
 #include "base/preferences.h"
+#include "base/searchengineweb.h"
 #include "base/tristatebool.h"
 #include "base/utils/fs.h"
 #include "base/utils/misc.h"
@@ -364,29 +365,7 @@ void WebApplication::action_query_getPieceStates()
 void WebApplication::action_query_getSearchResults()
 {
     CHECK_URI(0);
-
-    QVariantList searchResults;
-    for (const SearchResult searchResult : m_searchEngineWeb->readBufferedSearchOutput()) {
-        QMap<QString, QVariant> resultMap;
-        resultMap.insert("fileName", result.fileName);
-        resultMap.insert("fileUrl", result.fileUrl);
-        resultMap.insert("fileSize", result.fileSize);
-        resultMap.insert("nbSeeders", result.nbSeeders);
-        resultMap.insert("nbLeechers", result.nbLeechers);
-        resultMap.insert("siteUrl", result.siteUrl);
-        resultMap.insert("descrLink", result.descrLink);
-
-        searchResults << resultMap;
-    }
-
-    qDebug() << "Number of search results" << searchResults.size();
-
-    if (searchResults.size() > 0)
-        print(json::toJson(searchResults), Http::CONTENT_TYPE_JSON);
-    else if (!m_searchEngineWeb->isActive())
-        print(QByteArray("Finished."), Http::CONTENT_TYPE_TXT);
-    else
-        print(QByteArray("Loading..."), Http::CONTENT_TYPE_TXT);
+    print(btjson::getSearchResults(m_searchEngineWeb->readBufferedSearchOutput(), m_searchEngineWeb->isActive()), Http::CONTENT_TYPE_JSON);
 }
 
 // GET param:

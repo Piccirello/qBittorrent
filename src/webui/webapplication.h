@@ -32,7 +32,6 @@
 #include <QStringList>
 
 #include "abstractwebapplication.h"
-#include "base/searchengineweb.h"
 
 class SearchEngineWeb;
 

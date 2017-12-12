@@ -1128,3 +1128,42 @@ QByteArray btjson::getPeerLog(int lastKnownId)
 
     return json::toJson(peerList);
 }
+
+/**
+ * Returns the search results in JSON format.
+ *
+ * The return value is an object with a status and an array of dictionaries.
+ * The dictionary keys are:
+ *   - "fileName"
+ *   - "fileUrl"
+ *   - "fileSize"
+ *   - "nbSeeders"
+ *   - "nbLeechers"
+ *   - "siteUrl"
+ *   - "descrLink"
+ */
+QByteArray btjson::getSearchResults(QList<SearchResult> searchResults, bool isSearchActive)
+{
+    QVariantList searchResultsVariantList;
+    for (const SearchResult searchResult : searchResults) {
+        QMap<QString, QVariant> searchResultMap;
+
+        searchResultMap.insert("fileName", searchResult.fileName);
+        searchResultMap.insert("fileUrl", searchResult.fileUrl);
+        searchResultMap.insert("fileSize", searchResult.fileSize);
+        searchResultMap.insert("nbSeeders", searchResult.nbSeeders);
+        searchResultMap.insert("nbLeechers", searchResult.nbLeechers);
+        searchResultMap.insert("siteUrl", searchResult.siteUrl);
+        searchResultMap.insert("descrLink", searchResult.descrLink);
+
+        searchResultsVariantList << searchResultMap;
+    }
+
+    qDebug() << "Number of search results" << searchResultsVariantList.size();
+
+    QMap<QString, QVariant> resultMap;
+    resultMap.insert("status", (isSearchActive) ? "Loading." : "Finished.");
+    resultMap.insert("results", searchResultsVariantList);
+
+    return json::toJson(resultMap);
+}

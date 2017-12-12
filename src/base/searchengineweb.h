@@ -116,11 +116,4 @@ private:
     QQueue<SearchResult> m_stdoutQueue;
 };
 
-inline QDebug &operator<<(QDebug &debug, const SearchResult &result)
-{
-    QDebugStateSaver saver(debug);
-    debug.nospace() << result.fileSize << ", " << result.fileName;
-    return debug.space();
-}
-
 #endif // SEARCHENGINEWEB_H
