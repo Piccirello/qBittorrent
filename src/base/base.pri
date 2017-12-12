@@ -64,6 +64,7 @@ HEADERS += \
     $$PWD/torrentfilter.h \
     $$PWD/scanfoldersmodel.h \
     $$PWD/searchengine.h \
+    $$PWD/searchengineweb.h \
     $$PWD/global.h
 
 SOURCES += \
@@ -121,4 +122,5 @@ SOURCES += \
     $$PWD/torrentfileguard.cpp \
     $$PWD/torrentfilter.cpp \
     $$PWD/scanfoldersmodel.cpp \
-    $$PWD/searchengine.cpp
+    $$PWD/searchengine.cpp \
+    $$PWD/searchengineweb.cpp

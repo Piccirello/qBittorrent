@@ -60,6 +60,7 @@ preferences.h
 profile.h
 scanfoldersmodel.h
 searchengine.h
+searchengineweb.h
 settingsstorage.h
 torrentfileguard.h
 torrentfilter.h
@@ -120,6 +121,7 @@ preferences.cpp
 profile.cpp
 scanfoldersmodel.cpp
 searchengine.cpp
+searchengineweb.cpp
 settingsstorage.cpp
 torrentfileguard.cpp
 torrentfilter.cpp

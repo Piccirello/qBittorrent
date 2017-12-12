@@ -30,7 +30,11 @@
 #define WEBAPPLICATION_H
 
 #include <QStringList>
+
 #include "abstractwebapplication.h"
+#include "base/searchengineweb.h"
+
+class SearchEngineWeb;
 
 class WebApplication : public AbstractWebApplication
 {
@@ -58,6 +62,7 @@ private:
     void action_query_getPeerLog();
     void action_query_getPieceHashes();
     void action_query_getPieceStates();
+    void action_query_getSearchResults();
     void action_sync_maindata();
     void action_sync_torrent_peers();
     void action_command_shutdown();
@@ -98,6 +103,9 @@ private:
     void action_command_addCategory();
     void action_command_removeCategories();
     void action_command_getSavePath();
+    void action_command_startSearch();
+    void action_command_cancelSearch();
+    void action_command_downloadTorrent();
     void action_version_api();
     void action_version_api_min();
     void action_version_qbittorrent();
@@ -107,6 +115,8 @@ private:
     QString scope_;
     QString action_;
     QStringList args_;
+
+    SearchEngineWeb *m_searchEngineWeb;
 
     void doProcessRequest() override;
 

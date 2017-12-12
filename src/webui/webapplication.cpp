@@ -36,6 +36,7 @@
 #include <QDebug>
 #include <QRegularExpression>
 #include <QTimer>
+#include <QVector>
 
 #include "base/bittorrent/session.h"
 #include "base/bittorrent/torrenthandle.h"
@@ -90,6 +91,7 @@ QMap<QString, QMap<QString, WebApplication::Action>> WebApplication::initializeA
     ADD_ACTION(query, getPeerLog);
     ADD_ACTION(query, getPieceHashes);
     ADD_ACTION(query, getPieceStates);
+    ADD_ACTION(query, getSearchResults);
     ADD_ACTION(sync, maindata);
     ADD_ACTION(sync, torrent_peers);
     ADD_ACTION(command, shutdown);
@@ -130,6 +132,9 @@ QMap<QString, QMap<QString, WebApplication::Action>> WebApplication::initializeA
     ADD_ACTION(command, addCategory);
     ADD_ACTION(command, removeCategories);
     ADD_ACTION(command, getSavePath);
+    ADD_ACTION(command, startSearch);
+    ADD_ACTION(command, cancelSearch);
+    ADD_ACTION(command, downloadTorrent);
     ADD_ACTION(version, api);
     ADD_ACTION(version, api_min);
     ADD_ACTION(version, qbittorrent);
@@ -356,6 +361,24 @@ void WebApplication::action_query_getPieceStates()
     print(btjson::getPieceStatesForTorrent(args_.front()), Http::CONTENT_TYPE_JSON);
 }
 
+void WebApplication::action_query_getSearchResults()
+{
+    CHECK_URI(0);
+
+    QVariantList searchResults;
+    for (const SearchResult searchResult : m_searchEngineWeb->readBufferedSearchOutput())
+        searchResults << m_searchEngineWeb->fromValue(searchResult);
+
+    qDebug() << "Number of search results" << searchResults.size();
+
+    if (searchResults.size() > 0)
+        print(json::toJson(searchResults), Http::CONTENT_TYPE_JSON);
+    else if (!m_searchEngineWeb->isActive())
+        print(QByteArray("Finished."), Http::CONTENT_TYPE_TXT);
+    else
+        print(QByteArray("Loading..."), Http::CONTENT_TYPE_TXT);
+}
+
 // GET param:
 //   - rid (int): last response id
 void WebApplication::action_sync_maindata()
@@ -440,7 +463,6 @@ void WebApplication::action_command_download()
     }
 
     BitTorrent::AddTorrentParams params;
-    // TODO: Check if destination actually exists
     params.skipChecking = skipChecking;
     params.sequential = seqDownload;
     params.firstLastPiecePriority = firstLastPiece;
@@ -451,6 +473,14 @@ void WebApplication::action_command_download()
     params.name = torrentName;
     params.uploadLimit = (upLimit > 0) ? upLimit : -1;
     params.downloadLimit = (dlLimit > 0) ? dlLimit : -1;
+
+    // verify whether the save path actually exists
+    const QString savePathExpanded = Utils::Fs::expandPathAbs(savepath);
+    if (!QDir(savePathExpanded).exists()) {
+        qDebug() << "Unable to save torrents. Save path does not exist:" << savePathExpanded;
+        print(QByteArray("Fails."), Http::CONTENT_TYPE_TXT);
+        return;
+    }
 
     bool partialSuccess = false;
     for (QString url : urls.split('\n')) {
@@ -931,6 +961,63 @@ void WebApplication::action_command_getSavePath()
     print(BitTorrent::Session::instance()->defaultSavePath());
 }
 
+void WebApplication::action_command_startSearch()
+{
+    // void startSearch(const QString &pattern, const QString &category, const QStringList &usedPlugins);
+    CHECK_URI(0);
+    CHECK_PARAMETERS("pattern");
+
+    if (Utils::Misc::pythonVersion() < 0) {
+        print(QByteArray("Please install Python to use the Search Engine."), Http::CONTENT_TYPE_TXT);
+        return;
+    }
+
+    if (m_searchEngineWeb->isActive()) {
+        print(QByteArray("Another search is currently active. Canceling it."), Http::CONTENT_TYPE_TXT);
+        m_searchEngineWeb->cancelSearch();
+    }
+
+    const QString pattern = request().posts["pattern"].trimmed();
+    const QString category = "all";
+    const QStringList plugins = m_searchEngineWeb->allPlugins();
+    // No search pattern entered
+    if (pattern.isEmpty()) {
+        print(QByteArray("Empty search pattern."), Http::CONTENT_TYPE_TXT);
+        return;
+    }
+
+    m_searchEngineWeb->startSearch(pattern, category, plugins);
+    print(QByteArray("Ok."), Http::CONTENT_TYPE_TXT);
+}
+
+void WebApplication::action_command_cancelSearch()
+{
+    CHECK_URI(0);
+
+    if (!m_searchEngineWeb->isActive()) {
+        print(QByteArray("Nothing to cancel."), Http::CONTENT_TYPE_TXT);
+        return;
+    }
+
+    m_searchEngineWeb->cancelSearch();
+    print(QByteArray("Ok."), Http::CONTENT_TYPE_TXT);
+}
+
+void WebApplication::action_command_downloadTorrent()
+{
+    CHECK_URI(0);
+    CHECK_PARAMETERS("siteUrl" << "url");
+    const QString siteUrl = request().posts["siteUrl"];
+    const QString url = request().posts["url"];
+
+    if (url.startsWith("bc://bt/", Qt::CaseInsensitive) || url.startsWith("magnet:", Qt::CaseInsensitive))
+        BitTorrent::Session::instance()->addTorrent(url);
+    else
+        m_searchEngineWeb->downloadTorrent(siteUrl, url);
+
+    print(QByteArray("Ok."), Http::CONTENT_TYPE_TXT);
+}
+
 bool WebApplication::isPublicScope()
 {
     return (scope_ == DEFAULT_SCOPE || scope_ == VERSION_INFO);
@@ -985,6 +1072,7 @@ void WebApplication::parsePath()
 WebApplication::WebApplication(QObject *parent)
     : AbstractWebApplication(parent)
 {
+     m_searchEngineWeb = new SearchEngineWeb;
 }
 
 QMap<QString, QMap<QString, WebApplication::Action> > WebApplication::actions_ = WebApplication::initializeActions();
