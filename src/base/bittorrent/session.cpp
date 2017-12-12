@@ -2065,6 +2065,7 @@ bool Session::addTorrent(QString source, const AddTorrentParams &params)
         connect(handler, SIGNAL(downloadFailed(QString, QString)), this, SLOT(handleDownloadFailed(QString, QString)));
         connect(handler, SIGNAL(redirectedToMagnet(QString, QString)), this, SLOT(handleRedirectedToMagnet(QString, QString)));
         m_downloadedTorrents[handler->url()] = params;
+        return true;
     }
     else {
         TorrentFileGuard guard(source);
