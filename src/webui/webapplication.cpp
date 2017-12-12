@@ -366,8 +366,18 @@ void WebApplication::action_query_getSearchResults()
     CHECK_URI(0);
 
     QVariantList searchResults;
-    for (const SearchResult searchResult : m_searchEngineWeb->readBufferedSearchOutput())
-        searchResults << m_searchEngineWeb->fromValue(searchResult);
+    for (const SearchResult searchResult : m_searchEngineWeb->readBufferedSearchOutput()) {
+        QMap<QString, QVariant> resultMap;
+        resultMap.insert("fileName", result.fileName);
+        resultMap.insert("fileUrl", result.fileUrl);
+        resultMap.insert("fileSize", result.fileSize);
+        resultMap.insert("nbSeeders", result.nbSeeders);
+        resultMap.insert("nbLeechers", result.nbLeechers);
+        resultMap.insert("siteUrl", result.siteUrl);
+        resultMap.insert("descrLink", result.descrLink);
+
+        searchResults << resultMap;
+    }
 
     qDebug() << "Number of search results" << searchResults.size();
 

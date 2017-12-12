@@ -365,17 +365,3 @@ PluginVersion SearchEngineWeb::getPluginVersion(QString filePath)
     }
     return version;
 }
-
-QVariant SearchEngineWeb::fromValue(const SearchResult &result)
-{
-    QMap<QString, QVariant> resultMap;
-    resultMap.insert("fileName", result.fileName);
-    resultMap.insert("fileUrl", result.fileUrl);
-    resultMap.insert("fileSize", result.fileSize);
-    resultMap.insert("nbSeeders", result.nbSeeders);
-    resultMap.insert("nbLeechers", result.nbLeechers);
-    resultMap.insert("siteUrl", result.siteUrl);
-    resultMap.insert("descrLink", result.descrLink);
-
-    return QVariant(resultMap);
-}

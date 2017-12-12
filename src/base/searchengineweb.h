@@ -90,8 +90,6 @@ public:
     static QString categoryFullName(const QString &categoryName);
     static QString pluginsLocation();
 
-    QVariant fromValue(const SearchResult &result);
-
 signals:
     void torrentFileDownloaded(const QString &path);
 
