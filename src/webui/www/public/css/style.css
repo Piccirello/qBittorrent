@@ -488,3 +488,17 @@ td.statusBarSeparator {
     background-position: center 1px;
     background-size: 2px 18px;
 }
+
+/* Search tab */
+
+#searchTabColumn {
+    width: 100% !important;
+}
+
+#searchTabColumn.invisible {
+    width: 0 !important;
+}
+
+#SearchPanel, #SearchPanel_wrapper, #SearchPanel_pad {
+    height: inherit;
+}

@@ -98,12 +98,21 @@ window.addEvent('load', function () {
         width : filt_w,
         resizeLimit : [100, 300]
     });
+
     new MochaUI.Column({
         id : 'mainColumn',
         placement : 'main',
         width : null,
         resizeLimit : [100, 300]
     });
+
+    new MochaUI.Column({
+        id : 'searchTabColumn',
+        placement : 'main',
+        width : null
+    });
+
+    $("searchTabColumn").addClass("invisible");
 
     setCategoryFilter = function(hash) {
         selected_category = hash;
@@ -594,6 +603,44 @@ window.addEvent('load', function () {
         column : 'mainColumn',
         height : prop_h
     });
+
+    new MochaUI.Panel({
+        id : 'SearchPanel',
+        title : 'Search',
+        header : false,
+        padding : {
+            top : 0,
+            right : 0,
+            bottom : 0,
+            left : 0
+        },
+        loadMethod : 'xhr',
+        contentURL : 'search.html',
+        content: '',
+        onContentLoaded : function () {
+            // updateMainData();
+        },
+        column : 'searchTabColumn',
+        height : null
+    });
+
+    // Tabs
+    MochaUI.initializeTabs('mainWindowTabs');
+
+    $('transfersTabLink').addEvent('click', function(e) {
+        $("filtersColumn").removeClass("invisible");
+        $("filtersColumn_handle").removeClass("invisible");
+        $("mainColumn").removeClass("invisible");
+        $("searchTabColumn").addClass("invisible");
+    });
+
+    $('searchTabLink').addEvent('click', function(e){
+        $("filtersColumn").addClass("invisible");
+        $("filtersColumn_handle").addClass("invisible");
+        $("mainColumn").addClass("invisible");
+        $("searchTabColumn").removeClass("invisible");
+    });
+
 });
 
 function closeWindows() {
