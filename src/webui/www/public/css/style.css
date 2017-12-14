@@ -298,8 +298,13 @@ a.propButton img {
     padding-right: 5px;
 }
 
-#mochaToolbar #searchButton {
+#mochaToolbar .toolbarTabs {
     float: right;
+    margin-right: 5px;
+}
+
+#mochaToolbar .toolbarTabs #mainWindowTabs li {
+    margin: 0;
 }
 
 /* Tri-state checkbox */
