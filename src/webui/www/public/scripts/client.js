@@ -24,6 +24,7 @@
 
 torrentsTable = new TorrentsTable();
 torrentPeersTable = new TorrentPeersTable();
+searchResultsTable = new SearchResultsTable();
 
 var updatePropertiesPanel = function () {};
 

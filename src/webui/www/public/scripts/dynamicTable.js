@@ -1263,4 +1263,34 @@ var TorrentPeersTable = new Class({
         }
     });
 
+var SearchResultsTable = new Class({
+        Extends: DynamicTable,
+
+        initColumns : function () {
+            this.newColumn('name', '', 'QBT_TR(Name)QBT_TR[CONTEXT=SearchResultsTable]', 400, true);
+            this.newColumn('size', '', 'QBT_TR(Size)QBT_TR[CONTEXT=SearchResultsTable]', 100, true);
+            this.newColumn('seeders', '', 'QBT_TR(Seeders)QBT_TR[CONTEXT=SearchResultsTable]', 100, true);
+            this.newColumn('leechers', '', 'QBT_TR(Leechers)QBT_TR[CONTEXT=SearchResultsTable]', 100, true);
+            this.newColumn('search_engine', '', 'QBT_TR(Search engine)QBT_TR[CONTEXT=SearchResultsTable]', 250, true);
+
+            this.initColumnsFunctions();
+        },
+
+        initColumnsFunctions : function () {
+            this.columns['name'].updateTd = function (td, row) {
+                td.set('html', escapeHtml(this.getRowValue(row)));
+            };
+
+            this.columns['size'].updateTd = function (td, row) {
+                var size = this.getRowValue(row);
+                td.set('html', friendlyUnit(size, false));
+            };
+
+            this.columns['seeders'].updateTd = this.columns['name'].updateTd;
+            this.columns['leechers'].updateTd = this.columns['name'].updateTd;
+            this.columns['search_engine'].updateTd = this.columns['name'].updateTd;
+
+        }
+    });
+
 /*************************************************************/
