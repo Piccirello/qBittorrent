@@ -60,6 +60,7 @@ public:
     static QByteArray getLog(bool normal, bool info, bool warning, bool critical, int lastKnownId);
     static QByteArray getPeerLog(int lastKnownId);
     static QByteArray getSearchResults(QList<SearchResult> searchResults, bool isSearchActive);
+    static QByteArray getSearchResults(const QList<SearchResult> searchResults, const bool isSearchActive);
 }; // class btjson
 
 #endif // BTJSON_H

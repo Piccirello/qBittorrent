@@ -1142,7 +1142,7 @@ QByteArray btjson::getPeerLog(int lastKnownId)
  *   - "siteUrl"
  *   - "descrLink"
  */
-QByteArray btjson::getSearchResults(QList<SearchResult> searchResults, bool isSearchActive)
+QByteArray btjson::getSearchResults(const QList<SearchResult> searchResults, const bool isSearchActive)
 {
     QVariantList searchResultsVariantList;
     for (const SearchResult searchResult : searchResults) {
