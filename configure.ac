@@ -22,7 +22,7 @@ AC_ARG_ENABLE(debug,
               [AS_HELP_STRING([--enable-debug],
                               [Enable debug build])],
               [],
-              [enable_debug=yes])
+              [enable_debug=no])
 
 AC_ARG_ENABLE(gui,
               [AS_HELP_STRING([--disable-gui],
