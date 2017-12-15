@@ -78,6 +78,7 @@ public:
     ~SearchEngineWeb();
 
     QStringList allPlugins() const;
+    QStringList enabledPlugins() const;
     bool isActive() const;
 
     void startSearch(const QString &pattern, const QString &category, const QStringList &usedPlugins);

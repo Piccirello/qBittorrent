@@ -84,6 +84,16 @@ QStringList SearchEngineWeb::allPlugins() const
     return m_plugins.keys();
 }
 
+QStringList SearchEngineWeb::enabledPlugins() const
+{
+    QStringList plugins;
+    foreach (const PluginInfo *plugin, m_plugins.values()) {
+        if (plugin->enabled)
+            plugins << plugin->name;
+    }
+
+    return plugins;
+}
 bool SearchEngineWeb::isActive() const
 {
     return (m_searchProcess->state() != QProcess::NotRunning);
