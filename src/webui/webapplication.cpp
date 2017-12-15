@@ -961,21 +961,28 @@ void WebApplication::action_command_startSearch()
 {
     // void startSearch(const QString &pattern, const QString &category, const QStringList &usedPlugins);
     CHECK_URI(0);
-    CHECK_PARAMETERS("pattern");
+    CHECK_PARAMETERS("pattern" << "category" << "plugins");
 
     if (Utils::Misc::pythonVersion() < 0) {
         print(QByteArray("Please install Python to use the Search Engine."), Http::CONTENT_TYPE_TXT);
         return;
     }
 
-    if (m_searchEngineWeb->isActive()) {
-        print(QByteArray("Another search is currently active. Canceling it."), Http::CONTENT_TYPE_TXT);
+    if (m_searchEngineWeb->isActive())
         m_searchEngineWeb->cancelSearch();
-    }
 
     const QString pattern = request().posts["pattern"].trimmed();
-    const QString category = "all";
-    const QStringList plugins = m_searchEngineWeb->allPlugins();
+    const QString category = request().posts["category"].trimmed();
+    QStringList plugins;
+    if (request().posts["plugins"].trimmed() == "all")
+        plugins = m_searchEngineWeb->allPlugins();
+    else if (request().posts["plugins"].trimmed() == "enabled")
+        plugins = m_searchEngineWeb->enabledPlugins();
+    else if (request().posts["plugins"].trimmed() == "multi")
+        plugins = m_searchEngineWeb->enabledPlugins();
+    else
+        plugins << request().posts["plugins"].trimmed();
+
     // No search pattern entered
     if (pattern.isEmpty()) {
         print(QByteArray("Empty search pattern."), Http::CONTENT_TYPE_TXT);
