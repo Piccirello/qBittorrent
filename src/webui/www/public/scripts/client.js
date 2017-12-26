@@ -827,13 +827,13 @@ var loadSearchResultsData = function() {
                         var result = results[i];
                         var row = {
                             rowId: searchResultsRowId,
-                            descrLink: escapeHtml(result.descrLink),
+                            descrLink: result.descrLink,
                             fileName: escapeHtml(result.fileName),
-                            fileSize: escapeHtml(result.fileSize),
-                            fileUrl: escapeHtml(result.fileUrl),
-                            nbLeechers: escapeHtml(result.nbLeechers),
-                            nbSeeders: escapeHtml(result.nbSeeders),
-                            siteUrl: escapeHtml(result.siteUrl),
+                            fileSize: result.fileSize,
+                            fileUrl: result.fileUrl,
+                            nbLeechers: result.nbLeechers,
+                            nbSeeders: result.nbSeeders,
+                            siteUrl: result.siteUrl,
                         };
 
                         searchResultsTable.updateRowData(row);
