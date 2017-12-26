@@ -33,14 +33,15 @@ var updateTrackersData = function () {};
 var updateTorrentPeersData = function () {};
 var updateWebSeedsData = function () {};
 var updateTorrentFilesData = function () {};
-var updateSearchResultsData = function () {};
 
 var updateMainData = function () {};
-var startSearch = function() {};
-var searchResultsRowId = 0;
 var alternativeSpeedLimits = false;
 var queueing_enabled = true;
 var syncMainDataTimerPeriod = 1500;
+
+var updateSearchResultsData = function () {};
+var searchResultsRowId = 0;
+var searchRunning = false;
 
 var clipboardEvent;
 
@@ -782,6 +783,14 @@ var loadSearchResultsData = function() {
         },
         onSuccess: function(response) {
             $('error_div').set('html', '');
+
+            // check if user stopped the search prior to receiving the response
+            if (!searchRunning) {
+                clearTimeout(loadSearchResultsTimer);
+                searchResultsRowId = 0;
+                return;
+            }
+
             if (response) {
                 if (response['results']) {
                     var results = response['results'];
@@ -810,6 +819,7 @@ var loadSearchResultsData = function() {
 
                 if ((response['status']) && (response['status'] === "Finished.")) {
                     clearTimeout(loadSearchResultsTimer);
+                    $('startSearchButton').set('text', 'Search');
                     searchResultsRowId = 0;
                     return;
                 }

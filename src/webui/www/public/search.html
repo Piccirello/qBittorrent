@@ -14,7 +14,7 @@
                 <option disabled>-----------------------</option>
                 <option>Option 4</option>
             </select>
-            <button style="width: 90px; height: 20px;" onclick="startSearch();">Search</button>
+            <button style="width: 90px; height: 20px;" id="startSearchButton" onclick="startStopSearch();">Search</button>
         </div>
     </div>
 
@@ -51,40 +51,62 @@
 <script type="text/javascript">
     searchResultsTable.setup('searchResultsTableDiv', 'searchResultsTableFixedHeaderDiv', null);
 
-    startSearch = function() {
-        var pattern = $('searchPattern').getProperty('value');
-        var category = $('categorySelect').getProperty('value');
-        var plugins = $('pluginsSelect').getProperty('value');
+    startStopSearch = function() {
+        if (!searchRunning) {
+            var pattern = $('searchPattern').getProperty('value').trim();
+            var category = $('categorySelect').getProperty('value');
+            var plugins = $('pluginsSelect').getProperty('value');
 
-        if (!pattern || !category || !plugins) return;
+            if (!pattern || !category || !plugins) return;
 
-        clearTimeout(loadSearchResultsTimer);
-        searchResultsTable.clear();
-        $('numSearchResults').set('html', searchResultsTable.getRowIds().length);
-        searchResultsRowId = 0;
+            clearTimeout(loadSearchResultsTimer);
+            searchResultsTable.clear();
+            $('numSearchResults').set('html', searchResultsTable.getRowIds().length);
+            searchResultsRowId = 0;
 
-        var url = new URI('command/startSearch');
-        var request = new Request({
-            url: url,
-            noCache: true,
-            method: 'post',
-            data: {
-                pattern: pattern,
-                category: category,
-                plugins: plugins
-            },
-            onFailure: function() {
-                $('error_div').set('html', 'QBT_TR(qBittorrent client is not reachable)QBT_TR[CONTEXT=HttpServer]');
-            },
-            onSuccess: function(response) {
-                if (response === "Ok.") {
-                    $('error_div').set('html', '');
-                    updateSearchResultsData();
-                }
-                else {
+            var url = new URI('command/startSearch');
+            var request = new Request({
+                url: url,
+                noCache: true,
+                method: 'post',
+                data: {
+                    pattern: pattern,
+                    category: category,
+                    plugins: plugins
+                },
+                onFailure: function() {
                     $('error_div').set('html', 'QBT_TR(qBittorrent client is not reachable)QBT_TR[CONTEXT=HttpServer]');
+                },
+                onSuccess: function(response) {
+                    if (response === "Ok.") {
+                        $('error_div').set('html', '');
+                        $('startSearchButton').set('text', 'Stop');
+                        searchRunning = true;
+                        updateSearchResultsData();
+                    }
+                    else {
+                        $('error_div').set('html', 'QBT_TR(qBittorrent client is not reachable)QBT_TR[CONTEXT=HttpServer]');
+                    }
                 }
-            }
-        }).send();
+            }).send();
+        }
+        else {
+            var url = new URI('command/cancelSearch');
+            var request = new Request({
+                url: url,
+                noCache: true,
+                method: 'post',
+                onFailure: function() {
+                    $('error_div').set('html', 'QBT_TR(qBittorrent client is not reachable)QBT_TR[CONTEXT=HttpServer]');
+                },
+                onSuccess: function(response) {
+                    $('error_div').set('html', '');
+                    $('startSearchButton').set('text', 'Search');
+                    searchRunning = false;
+                    clearTimeout(loadSearchResultsTimer);
+                }
+            }).send();
+        }
+    };
     };
 </script>
