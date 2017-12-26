@@ -1,18 +1,50 @@
 <div id="searchResults">
-    <div id="searchResultsTableFixedHeaderDiv" class="dynamicTableFixedHeaderDiv">
-        <table class="dynamicTable" style="position:relative;">
-            <thead>
-                <tr class="dynamicTableHeader"></tr>
-            </thead>
-        </table>
+    <div style="overflow: hidden; height: 70px;">
+        <div style="margin: 20px 0; width: 1050px; height: 30px;">
+            <input type="text" id="searchPattern" style="width: 600px; height: 20px; padding: 1px 5px;" />
+            <select style="width: 150px;" id="categorySelect">
+                <option value="all">All categories</option>
+                <option disabled>-----------------------</option>
+                <option>Option 2</option>
+            </select>
+            <select style="width: 150px;" id="pluginsSelect">
+                <option value="all">Only enabled</option>
+                <option value="all">All plugins</option>
+                <option>Select...</option>
+                <option disabled>-----------------------</option>
+                <option>Option 4</option>
+            </select>
+            <button style="width: 90px; height: 20px;" onclick="startSearch();">Search</button>
+        </div>
     </div>
-    <div id="searchResultsTableDiv" class="dynamicTableDiv">
-        <table class="dynamicTable">
-            <thead>
-                <tr class="dynamicTableHeader"></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+
+    <div style="height: 30px;">
+        <span>Results (<span id="numSearchResults">0</span>)</span>
+    </div>
+
+    <div style="height: calc(100% - 140px); overflow: auto;">
+        <div id="searchResultsTableFixedHeaderDiv" class="dynamicTableFixedHeaderDiv">
+            <table class="dynamicTable" style="position:relative;">
+                <thead>
+                    <tr class="dynamicTableHeader"></tr>
+                </thead>
+            </table>
+        </div>
+        <div id="searchResultsTableDiv" class="dynamicTableDiv">
+            <table class="dynamicTable">
+                <thead>
+                    <tr class="dynamicTableHeader"></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="height: 30px; padding-top: 10px;">
+        <input type="button" style="width: 150;" value="Download Torrent" />
+        <input type="button" style="width: 160;" value="Torrent Description" />
+        <input type="button" style="width: 100;" value="Copy URL" />
+        <input type="button" style="width: 140; float: right;" value="Manage Plugins" />
     </div>
 </div>
 

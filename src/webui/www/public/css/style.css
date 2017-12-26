@@ -502,3 +502,12 @@ td.statusBarSeparator {
 #SearchPanel, #SearchPanel_wrapper, #SearchPanel_pad {
     height: inherit;
 }
+
+#searchResults {
+    padding: 0 20px;
+    height: 100%;
+}
+
+#searchResultsTableDiv {
+    height: calc(100% - 26px) !important;
+}

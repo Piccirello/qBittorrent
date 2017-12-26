@@ -33,8 +33,11 @@ var updateTrackersData = function () {};
 var updateTorrentPeersData = function () {};
 var updateWebSeedsData = function () {};
 var updateTorrentFilesData = function () {};
+var updateSearchResultsData = function () {};
 
 var updateMainData = function () {};
+var startSearch = function() {};
+var searchResultsRowId = 0;
 var alternativeSpeedLimits = false;
 var queueing_enabled = true;
 var syncMainDataTimerPeriod = 1500;
@@ -619,7 +622,42 @@ window.addEvent('load', function () {
         contentURL : 'search.html',
         content: '',
         onContentLoaded : function () {
-            // updateMainData();
+            startSearch = function() {
+                var pattern = $('searchPattern').getProperty('value');
+                var category = $('categorySelect').getProperty('value');
+                var plugins = $('pluginsSelect').getProperty('value');
+
+                if (!pattern || !category || !plugins) return;
+
+                clearTimeout(loadSearchResultsTimer);
+                searchResultsTable.clear();
+                $('numSearchResults').set('html', searchResultsTable.getRowIds().length);
+                searchResultsRowId = 0;
+
+                var url = new URI('command/startSearch');
+                var request = new Request({
+                    url: url,
+                    noCache: true,
+                    method: 'post',
+                    data: {
+                        pattern: pattern,
+                        category: category,
+                        plugins: plugins
+                    },
+                    onFailure: function() {
+                        $('error_div').set('html', 'QBT_TR(qBittorrent client is not reachable)QBT_TR[CONTEXT=HttpServer]');
+                    },
+                    onSuccess: function(response) {
+                        if (response === "Ok.") {
+                            $('error_div').set('html', '');
+                            updateSearchResultsData();
+                        }
+                        else {
+                            $('error_div').set('html', 'QBT_TR(qBittorrent client is not reachable)QBT_TR[CONTEXT=HttpServer]');
+                        }
+                    }
+                }).send();
+            };
         },
         column : 'searchTabColumn',
         height : null
@@ -766,4 +804,61 @@ var loadTorrentPeersData = function(){
 updateTorrentPeersData = function(){
     clearTimeout(loadTorrentPeersTimer);
     loadTorrentPeersData();
+};
+
+var loadSearchResultsTimer;
+var loadSearchResultsData = function() {
+    var url = new URI('query/getSearchResults');
+    var request = new Request.JSON({
+        url: url,
+        noCache: true,
+        method: 'get',
+        onFailure: function() {
+            $('error_div').set('html', 'QBT_TR(qBittorrent client is not reachable)QBT_TR[CONTEXT=HttpServer]');
+            clearTimeout(loadSearchResultsTimer);
+            loadSearchResultsTimer = loadSearchResultsData.delay(3000);
+        },
+        onSuccess: function(response) {
+            $('error_div').set('html', '');
+            if (response) {
+                if (response['results']) {
+                    var results = response['results'];
+                    for (var i = 0; i < results.length; i++) {
+                        var result = results[i];
+                        var row = {
+                            rowId: searchResultsRowId,
+                            descrLink: escapeHtml(result.descrLink),
+                            fileName: escapeHtml(result.fileName),
+                            fileSize: escapeHtml(result.fileSize),
+                            fileUrl: escapeHtml(result.fileUrl),
+                            nbLeechers: escapeHtml(result.nbLeechers),
+                            nbSeeders: escapeHtml(result.nbSeeders),
+                            siteUrl: escapeHtml(result.siteUrl),
+                        };
+
+                        searchResultsTable.updateRowData(row);
+                        searchResultsRowId++;
+                    }
+
+                    $('numSearchResults').set('html', searchResultsTable.getRowIds().length);
+                }
+
+                searchResultsTable.updateTable();
+                searchResultsTable.altRow();
+
+                if ((response['status']) && (response['status'] === "Finished.")) {
+                    clearTimeout(loadSearchResultsTimer);
+                    searchResultsRowId = 0;
+                    return;
+                }
+            }
+            clearTimeout(loadSearchResultsTimer);
+            loadSearchResultsTimer = loadSearchResultsData.delay(1500);
+        }
+    }).send();
+};
+
+updateSearchResultsData = function(){
+    clearTimeout(loadSearchResultsTimer);
+    loadSearchResultsTimer = loadSearchResultsData.delay(100);
 };
