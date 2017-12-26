@@ -364,7 +364,7 @@ void WebApplication::action_query_getPieceStates()
 void WebApplication::action_query_getSearchResults()
 {
     CHECK_URI(0);
-    print(btjson::getSearchResults(m_searchEngineWeb->readBufferedSearchOutput(), m_searchEngineWeb->isActive()), Http::CONTENT_TYPE_JSON);
+    print(btjson::getSearchResults(m_searchEngineWeb->readBufferedSearchOutput(), m_searchEngineWeb->isActive(), m_searchEngineWeb->getQueueSize()), Http::CONTENT_TYPE_JSON);
 }
 
 // GET param:

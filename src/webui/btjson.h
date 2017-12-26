@@ -59,7 +59,7 @@ public:
     static QByteArray getTorrentsRatesLimits(const QStringList& hashes, const bool downloadLimits);
     static QByteArray getLog(const bool normal, const bool info, const bool warning, const bool critical, const int lastKnownId);
     static QByteArray getPeerLog(const int lastKnownId);
-    static QByteArray getSearchResults(const QList<SearchResult> searchResults, const bool isSearchActive);
+    static QByteArray getSearchResults(const QList<SearchResult> searchResults, const bool isSearchActive, const int queueSize);
 }; // class btjson
 
 #endif // BTJSON_H

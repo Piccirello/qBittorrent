@@ -99,6 +99,11 @@ bool SearchEngineWeb::isActive() const
     return (m_searchProcess->state() != QProcess::NotRunning);
 }
 
+int SearchEngineWeb::getQueueSize() const
+{
+    return m_stdoutQueue.size();
+}
+
 void SearchEngineWeb::startSearch(const QString &pattern, const QString &category, const QStringList &usedPlugins)
 {
     // Search process already running or

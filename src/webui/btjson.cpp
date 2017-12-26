@@ -1142,7 +1142,7 @@ QByteArray btjson::getPeerLog(const int lastKnownId)
  *   - "siteUrl"
  *   - "descrLink"
  */
-QByteArray btjson::getSearchResults(const QList<SearchResult> searchResults, const bool isSearchActive)
+QByteArray btjson::getSearchResults(const QList<SearchResult> searchResults, const bool isSearchActive, const int queueSize)
 {
     QVariantList searchResultsVariantList;
     for (const SearchResult searchResult : searchResults) {
@@ -1162,7 +1162,7 @@ QByteArray btjson::getSearchResults(const QList<SearchResult> searchResults, con
     qDebug() << "Number of search results" << searchResultsVariantList.size();
 
     QMap<QString, QVariant> resultMap;
-    resultMap.insert("status", (isSearchActive) ? "Loading." : "Finished.");
+    resultMap.insert("status", ((isSearchActive) || (queueSize > 0)) ? "Loading." : "Finished.");
     resultMap.insert("results", searchResultsVariantList);
 
     return json::toJson(resultMap);

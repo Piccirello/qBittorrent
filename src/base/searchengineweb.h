@@ -80,6 +80,7 @@ public:
     QStringList allPlugins() const;
     QStringList enabledPlugins() const;
     bool isActive() const;
+    int getQueueSize() const;
 
     void startSearch(const QString &pattern, const QString &category, const QStringList &usedPlugins);
     void cancelSearch();
