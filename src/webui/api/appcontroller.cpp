@@ -52,6 +52,7 @@
 #include "base/rss/rss_autodownloader.h"
 #include "base/rss/rss_session.h"
 #include "base/scanfoldersmodel.h"
+#include "base/torrentfileguard.h"
 #include "base/utils/fs.h"
 #include "base/utils/net.h"
 #include "../webapplication.h"
@@ -83,6 +84,10 @@ void AppController::preferencesAction()
     QVariantMap data;
 
     // Downloads
+    // When adding a torrent
+    data["create_subfolder_enabled"] = session->isCreateTorrentSubfolder();
+    data["start_paused_enabled"] = session->isAddTorrentPaused();
+    data["auto_delete_mode"] = static_cast<int>(TorrentFileGuard::autoDeleteMode());
     data["preallocate_all"] = session->isPreallocationEnabled();
     data["incomplete_files_ext"] = session->isAppendExtensionEnabled();
     // Saving Management
@@ -238,6 +243,13 @@ void AppController::setPreferencesAction()
     const QVariantMap m = QJsonDocument::fromJson(params()["json"].toUtf8()).toVariant().toMap();
 
     // Downloads
+    // When adding a torrent
+    if (m.contains("create_subfolder_enabled"))
+        session->setCreateTorrentSubfolder(m["create_subfolder_enabled"].toBool());
+    if (m.contains("start_paused_enabled"))
+        session->setAddTorrentPaused(m["start_paused_enabled"].toBool());
+    if (m.contains("auto_delete_mode"))
+        TorrentFileGuard::setAutoDeleteMode(static_cast<TorrentFileGuard::AutoDeleteMode>(m["auto_delete_mode"].toInt()));
     if (m.contains("preallocate_all"))
         session->setPreallocationEnabled(m["preallocate_all"].toBool());
     if (m.contains("incomplete_files_ext"))
