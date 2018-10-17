@@ -86,6 +86,10 @@ void AppController::preferencesAction()
     data["preallocate_all"] = session->isPreallocationEnabled();
     data["incomplete_files_ext"] = session->isAppendExtensionEnabled();
     // Saving Management
+    data["auto_tmm_enabled"] = session->isAutoTMMDisabledByDefault() ? 0 : 1;
+    data["torrent_changed_tmm_enabled"] = session->isDisableAutoTMMWhenCategoryChanged() ? 0 : 1;
+    data["save_path_changed_tmm_enabled"] = session->isDisableAutoTMMWhenDefaultSavePathChanged() ? 0 : 1;
+    data["category_changed_tmm_enabled"] = session->isDisableAutoTMMWhenCategorySavePathChanged() ? 0 : 1;
     data["save_path"] = Utils::Fs::toNativePath(session->defaultSavePath());
     data["temp_path_enabled"] = session->isTempPathEnabled();
     data["temp_path"] = Utils::Fs::toNativePath(session->tempPath());
@@ -240,6 +244,14 @@ void AppController::setPreferencesAction()
         session->setAppendExtensionEnabled(m["incomplete_files_ext"].toBool());
 
     // Saving Management
+    if (m.contains("auto_tmm_enabled"))
+        session->setAutoTMMDisabledByDefault(!m["auto_tmm_enabled"].toBool());
+    if (m.contains("torrent_changed_tmm_enabled"))
+        session->setDisableAutoTMMWhenCategoryChanged(!m["torrent_changed_tmm_enabled"].toBool());
+    if (m.contains("save_path_changed_tmm_enabled"))
+        session->setDisableAutoTMMWhenDefaultSavePathChanged(!m["save_path_changed_tmm_enabled"].toBool());
+    if (m.contains("category_changed_tmm_enabled"))
+        session->setDisableAutoTMMWhenCategorySavePathChanged(!m["category_changed_tmm_enabled"].toBool());
     if (m.contains("save_path"))
         session->setDefaultSavePath(m["save_path"].toString());
     if (m.contains("temp_path_enabled"))
