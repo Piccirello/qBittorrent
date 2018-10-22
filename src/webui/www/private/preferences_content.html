@@ -723,6 +723,15 @@
             </div>
         </fieldset>
 
+        <fieldset class="settings">
+            <legend><input type="checkbox" id="use_alt_webui_checkbox" onclick="updateAlternativeWebUISettings();" />
+                <label for="use_alt_webui_checkbox">QBT_TR(Use alternative Web UI)QBT_TR[CONTEXT=OptionsDialog]</label></legend>
+            <div class="formRow">
+                <label for="webui_files_location_textarea">QBT_TR(Files location:)QBT_TR[CONTEXT=OptionsDialog]</label>
+                <input type="text" id="webui_files_location_textarea" />
+            </div>
+        </fieldset>
+
         <div class="formRow">
             <input type="checkbox" id="clickjacking_protection_checkbox" />
             <label for="clickjacking_protection_checkbox">QBT_TR(Enable clickjacking protection)QBT_TR[CONTEXT=OptionsDialog]</label>
@@ -1021,6 +1030,11 @@
     updateBypasssAuthSettings = function() {
         var isBypassAuthSubnetWhitelistEnabled = $('bypass_auth_subnet_whitelist_checkbox').getProperty('checked');
         $('bypass_auth_subnet_whitelist_textarea').setProperty('disabled', !isBypassAuthSubnetWhitelistEnabled);
+    };
+
+    updateAlternativeWebUISettings = function() {
+        var isUseAlternativeWebUIEnabled = $('use_alt_webui_checkbox').getProperty('checked');
+        $('webui_files_location_textarea').setProperty('disabled', !isUseAlternativeWebUIEnabled);
     };
 
     updateDynDnsSettings = function() {
@@ -1332,6 +1346,11 @@
                     $('bypass_auth_subnet_whitelist_textarea').setProperty('value', pref.bypass_auth_subnet_whitelist);
                     updateBypasssAuthSettings();
 
+                    // Use alternative Web UI
+                    $('use_alt_webui_checkbox').setProperty('checked', pref.alternative_webui_enabled);
+                    $('webui_files_location_textarea').setProperty('value', pref.alternative_webui_path);
+                    updateAlternativeWebUISettings();
+
                     // Security
                     $('clickjacking_protection_checkbox').setProperty('checked', pref.web_ui_clickjacking_protection_enabled);
                     $('csrf_protection_checkbox').setProperty('checked', pref.web_ui_csrf_protection_enabled);
@@ -1640,6 +1659,10 @@
         settings.set('bypass_local_auth', $('bypass_local_auth_checkbox').getProperty('checked'));
         settings.set('bypass_auth_subnet_whitelist_enabled', $('bypass_auth_subnet_whitelist_checkbox').getProperty('checked'));
         settings.set('bypass_auth_subnet_whitelist', $('bypass_auth_subnet_whitelist_textarea').getProperty('value'));
+
+        // Use alternative Web UI
+        settings.set('alternative_webui_enabled', $('use_alt_webui_checkbox').getProperty('checked'));
+        settings.set('alternative_webui_path', $('webui_files_location_textarea').getProperty('value'));
 
         settings.set('web_ui_clickjacking_protection_enabled', $('clickjacking_protection_checkbox').getProperty('checked'));
         settings.set('web_ui_csrf_protection_enabled', $('csrf_protection_checkbox').getProperty('checked'));

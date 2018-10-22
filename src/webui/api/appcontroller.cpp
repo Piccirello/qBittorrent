@@ -217,6 +217,9 @@ void AppController::preferencesAction()
     for (const Utils::Net::Subnet &subnet : copyAsConst(pref->getWebUiAuthSubnetWhitelist()))
         authSubnetWhitelistStringList << Utils::Net::subnetToString(subnet);
     data["bypass_auth_subnet_whitelist"] = authSubnetWhitelistStringList.join("\n");
+    // Use alternative Web UI
+    data["alternative_webui_enabled"] = pref->isAltWebUiEnabled();
+    data["alternative_webui_path"] = pref->getWebUiRootFolder();
     // Security
     data["web_ui_clickjacking_protection_enabled"] = pref->isWebUiClickjackingProtectionEnabled();
     data["web_ui_csrf_protection_enabled"] = pref->isWebUiCSRFProtectionEnabled();
@@ -515,6 +518,11 @@ void AppController::setPreferencesAction()
         // recognize new lines and commas as delimiters
         pref->setWebUiAuthSubnetWhitelist(m["bypass_auth_subnet_whitelist"].toString().split(QRegularExpression("\n|,"), QString::SkipEmptyParts));
     }
+    // Use alternative Web UI
+    if (m.contains("alternative_webui_enabled"))
+        pref->setAltWebUiEnabled(m["alternative_webui_enabled"].toBool());
+    if (m.contains("alternative_webui_path"))
+        pref->setWebUiRootFolder(m["alternative_webui_path"].toString());
     // Security
     if (m.contains("web_ui_clickjacking_protection_enabled"))
         pref->setWebUiClickjackingProtectionEnabled(m["web_ui_clickjacking_protection_enabled"].toBool());
