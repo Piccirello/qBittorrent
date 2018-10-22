@@ -161,6 +161,7 @@ void AppController::preferencesAction()
     data["bittorrent_protocol"] = static_cast<int>(session->btProtocol());
     data["limit_utp_rate"] = session->isUTPRateLimited();
     data["limit_tcp_overhead"] = session->includeOverheadInLimits();
+    data["limit_lan_peers"] = !session->ignoreLimitsOnLAN();
     data["alt_dl_limit"] = session->altGlobalDownloadSpeedLimit();
     data["alt_up_limit"] = session->altGlobalUploadSpeedLimit();
     // Scheduling
@@ -404,6 +405,8 @@ void AppController::setPreferencesAction()
         session->setUTPRateLimited(m["limit_utp_rate"].toBool());
     if (m.contains("limit_tcp_overhead"))
         session->setIncludeOverheadInLimits(m["limit_tcp_overhead"].toBool());
+    if (m.contains("limit_lan_peers"))
+        session->setIgnoreLimitsOnLAN(!m["limit_lan_peers"].toBool());
     if (m.contains("alt_dl_limit"))
         session->setAltGlobalDownloadSpeedLimit(m["alt_dl_limit"].toInt());
     if (m.contains("alt_up_limit"))
