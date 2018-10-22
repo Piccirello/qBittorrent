@@ -187,6 +187,9 @@ void AppController::preferencesAction()
     data["max_active_torrents"] = session->maxActiveTorrents();
     data["max_active_uploads"] = session->maxActiveUploads();
     data["dont_count_slow_torrents"] = session->ignoreSlowTorrentsForQueueing();
+    data["slow_torrent_dl_rate_threshold"] = session->downloadRateForSlowTorrents();
+    data["slow_torrent_ul_rate_threshold"] = session->uploadRateForSlowTorrents();
+    data["slow_torrent_inactive_timer"] = session->slowTorrentsInactivityTimer();
     // Share Ratio Limiting
     data["max_ratio_enabled"] = (session->globalMaxRatio() >= 0.);
     data["max_ratio"] = session->globalMaxRatio();
@@ -447,6 +450,12 @@ void AppController::setPreferencesAction()
         session->setMaxActiveUploads(m["max_active_uploads"].toInt());
     if (m.contains("dont_count_slow_torrents"))
         session->setIgnoreSlowTorrentsForQueueing(m["dont_count_slow_torrents"].toBool());
+    if (m.contains("slow_torrent_dl_rate_threshold"))
+        session->setDownloadRateForSlowTorrents(m["slow_torrent_dl_rate_threshold"].toInt());
+    if (m.contains("slow_torrent_ul_rate_threshold"))
+        session->setUploadRateForSlowTorrents(m["slow_torrent_ul_rate_threshold"].toInt());
+    if (m.contains("slow_torrent_inactive_timer"))
+        session->setSlowTorrentsInactivityTimer(m["slow_torrent_inactive_timer"].toInt());
     // Share Ratio Limiting
     if (m.contains("max_ratio_enabled")) {
         if (m["max_ratio_enabled"].toBool())
