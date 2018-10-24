@@ -95,6 +95,7 @@ void AppController::preferencesAction()
     data["torrent_changed_tmm_enabled"] = session->isDisableAutoTMMWhenCategoryChanged() ? 0 : 1;
     data["save_path_changed_tmm_enabled"] = session->isDisableAutoTMMWhenDefaultSavePathChanged() ? 0 : 1;
     data["category_changed_tmm_enabled"] = session->isDisableAutoTMMWhenCategorySavePathChanged() ? 0 : 1;
+    data["subcategories_enabled"] = session->isSubcategoriesEnabled();
     data["save_path"] = Utils::Fs::toNativePath(session->defaultSavePath());
     data["temp_path_enabled"] = session->isTempPathEnabled();
     data["temp_path"] = Utils::Fs::toNativePath(session->tempPath());
@@ -272,6 +273,8 @@ void AppController::setPreferencesAction()
         session->setDisableAutoTMMWhenDefaultSavePathChanged(!m["save_path_changed_tmm_enabled"].toBool());
     if (m.contains("category_changed_tmm_enabled"))
         session->setDisableAutoTMMWhenCategorySavePathChanged(!m["category_changed_tmm_enabled"].toBool());
+    if (m.contains("subcategories_enabled"))
+        session->setSubcategoriesEnabled(m["subcategories_enabled"].toBool());
     if (m.contains("save_path"))
         session->setDefaultSavePath(m["save_path"].toString());
     if (m.contains("temp_path_enabled"))
