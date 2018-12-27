@@ -941,6 +941,50 @@ void TorrentsController::renameAction()
     torrent->setName(name);
 }
 
+void TorrentsController::renameFileAction()
+{
+    checkParams({"hash", "name", "id"});
+
+    const QString hash = params()["hash"];
+    QString name = params()["name"];
+    name = name.replace(QRegularExpression("\r?\n|\r"), " ").trimmed();
+    if (!Utils::Fs::isValidFileSystemName(name))
+        throw APIError(APIErrorType::Conflict, tr("Name cannot be empty or contain forbidden characters"));
+
+    bool ok = false;
+    const int id = params()["id"].toInt(&ok);
+    if (!ok)
+        throw APIError(APIErrorType::Conflict, tr("File ID must be an integer"));
+
+    BitTorrent::TorrentHandle *const torrent = BitTorrent::Session::instance()->findTorrent(hash);
+    if (!torrent)
+        throw APIError(APIErrorType::NotFound);
+    const int filesCount = torrent->filesCount();
+    if ((id < 0) || (id >= filesCount))
+        throw APIError(APIErrorType::Conflict, tr("File ID is not valid"));
+
+    if (name.endsWith(QB_EXT))
+        name.chop(QB_EXT.size());
+    const QString oldFileName = torrent->fileName(id);
+    const QString oldFilePath = torrent->filePath(id);
+
+    const bool appendExt = BitTorrent::Session::instance()->isAppendExtensionEnabled()
+        && (torrent->filesProgress()[id] != 1);
+    const QString newFileName = name + (appendExt ? QB_EXT : QString());
+    const QString newFilePath = oldFilePath.leftRef(oldFilePath.size() - oldFileName.size()) + newFileName;
+
+    if (oldFileName == newFileName)
+        throw APIError(APIErrorType::Conflict, tr("Name is unchanged"));
+
+    for (int i = 0; i < filesCount; ++i) {
+        if (i == id) continue;
+        if (Utils::Fs::sameFileNames(torrent->filePath(i), newFilePath))
+            throw APIError(APIErrorType::Conflict, tr("Name is already in use in this folder"));
+    }
+
+    torrent->renameFile(id, newFilePath);
+}
+
 void TorrentsController::setAutoManagementAction()
 {
     checkParams({"hashes", "enable"});

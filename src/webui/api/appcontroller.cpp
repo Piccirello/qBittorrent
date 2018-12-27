@@ -32,6 +32,7 @@
 
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
@@ -570,4 +571,9 @@ void AppController::setPreferencesAction()
 void AppController::defaultSavePathAction()
 {
     setResult(BitTorrent::Session::instance()->defaultSavePath());
+}
+
+void AppController::pathSeparatorAction()
+{
+    setResult(QDir::separator());
 }

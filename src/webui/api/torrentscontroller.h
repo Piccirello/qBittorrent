@@ -51,6 +51,7 @@ private slots:
     void recheckAction();
     void reannounceAction();
     void renameAction();
+    void renameFileAction();
     void setCategoryAction();
     void createCategoryAction();
     void editCategoryAction();

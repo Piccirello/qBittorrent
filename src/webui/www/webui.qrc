@@ -27,6 +27,7 @@
         <file>private/scripts/contextmenu.js</file>
         <file>private/scripts/download.js</file>
         <file>private/scripts/dynamicTable.js</file>
+        <file>private/scripts/fs.js</file>
         <file>private/scripts/lib/clipboard.min.js</file>
         <file>private/scripts/lib/excanvas-compressed.js</file>
         <file>private/scripts/lib/mocha-yc.js</file>

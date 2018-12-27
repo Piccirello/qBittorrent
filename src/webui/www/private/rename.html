@@ -23,27 +23,54 @@
         renameKeyboardEvents.activate();
 
         window.addEvent('domready', function() {
+            var hash = new URI().getData('hash');
+            if (!hash)
+                return false;
+
             var name = new URI().getData('name');
             // set text field to current value
             if (name)
                 $('rename').value = escapeHtml(decodeURIComponent(name));
 
             $('rename').focus();
+
+            var fileId = new URI().getData('id');
+            if (fileId) {
+                var lastDotIndex = name.lastIndexOf('.');
+                if ((lastDotIndex > 3) && (name.substring(lastDotIndex - 4, lastDotIndex).toLowerCase() === ".tar"))
+                    lastDotIndex -= 4;
+                if (lastDotIndex > 0)
+                    $('rename').setSelectionRange(0, lastDotIndex);
+            }
+
             $('renameButton').addEvent('click', function(e) {
                 new Event(e).stop();
                 // check field
-                var name = $('rename').value.trim();
-                if (name === null || name === "")
+                var newName = $('rename').value.trim();
+                if ((newName === null) || (newName === ""))
                     return false;
 
-                var hash = new URI().getData('hash');
-                if (hash) {
+                if (fileId) {
+                    new Request({
+                        url: 'api/v2/torrents/renameFile',
+                        method: 'post',
+                        data: {
+                            hash: hash,
+                            id: fileId,
+                            name: newName
+                        },
+                        onComplete: function() {
+                            window.parent.closeWindows();
+                        }
+                    }).send();
+                }
+                else {
                     new Request({
                         url: 'api/v2/torrents/rename',
                         method: 'post',
                         data: {
                             hash: hash,
-                            name: name
+                            name: newName
                         },
                         onComplete: function() {
                             window.parent.closeWindows();

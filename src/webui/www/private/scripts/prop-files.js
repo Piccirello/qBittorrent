@@ -288,6 +288,12 @@ var torrentFilesContextMenu = new ContextMenu({
     targets: '#torrentFilesTableDiv tr',
     menu: 'torrentFilesMenu',
     actions: {
+        RenameFile: function(element, ref) {
+            var selectedRows = torrentFilesTable.selectedRowsIds();
+            if (selectedRows.length !== 1) return;
+
+            renameFileFN(selectedRows[0]);
+        },
         FilePrioIgnore: function(element, ref) {
             var selectedRows = torrentFilesTable.selectedRowsIds();
             if (selectedRows.length === 0) return;
@@ -320,12 +326,36 @@ var torrentFilesContextMenu = new ContextMenu({
     onShow: function() {
         var selectedRows = torrentFilesTable.selectedRowsIds();
 
+        if (selectedRows.length === 1)
+            this.showItem('RenameFile');
+        else
+            this.hideItem('RenameFile');
+
         if (is_seed)
             this.hideItem('FilePrio');
         else
             this.showItem('FilePrio');
     }
 });
+
+var renameFileFN = function(fileId) {
+    var row = torrentFilesTable.rows.get(fileId);
+    var name = encodeURIComponent(fileName(row.full_data.name));
+    var fileId = row.full_data.rowId;
+    new MochaUI.Window({
+        id: 'renamePage',
+        title: "QBT_TR(Rename)QBT_TR[CONTEXT=PropertiesWidget]",
+        loadMethod: 'iframe',
+        contentURL: 'rename.html?hash=' + current_hash + '&id=' + fileId + '&name=' + name,
+        scrollbars: false,
+        resizable: false,
+        maximizable: false,
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        width: 250,
+        height: 100
+    });
+};
 
 torrentFilesTable.setup('torrentFilesTableDiv', 'torrentFilesTableFixedHeaderDiv', torrentFilesContextMenu);
 // inject checkbox into table header
