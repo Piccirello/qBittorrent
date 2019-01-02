@@ -124,7 +124,7 @@ var switchCheckboxState = function() {
         // set file priority for all checked to Ignored
         torrentFilesTable.getFilteredAndSortedRows().forEach(function(row) {
             if (row.full_data.checked)
-                rows.push(row.full_data.rowId);
+                rows.push(row.full_data.fileId);
         });
     }
     else {
@@ -133,7 +133,7 @@ var switchCheckboxState = function() {
         // set file priority for all unchecked to Normal
         torrentFilesTable.getFilteredAndSortedRows().forEach(function(row) {
             if (!row.full_data.checked)
-                rows.push(row.full_data.rowId);
+                rows.push(row.full_data.fileId);
         });
     }
 
@@ -237,25 +237,27 @@ var loadTorrentFilesData = function() {
             clearTimeout(loadTorrentFilesDataTimer);
             loadTorrentFilesDataTimer = loadTorrentFilesData.delay(5000);
         },
-        onSuccess: function(files) {
-            var selectedFiles = torrentFilesTable.selectedRowsIds();
-
-            if (!files) {
+        onSuccess: function(response) {
+            if (!response) {
                 torrentFilesTable.clear();
                 return;
             }
 
-            var i = 0;
-            files.each(function(file) {
-                if (i === 0)
-                    is_seed = file.is_seed;
+            is_seed = (response.length > 0) ? response[0].is_seed : true;
+            var files = [];
+            response.each(function(file) {
+                var progress = (file.progress * 100).round(1);
+                if ((progress === 100) && (file.progress < 1))
+                    progress = 99.9;
 
+                var name = escapeHtml(file.name);
                 var row = {
-                    rowId: i,
+                    fileId: files.length,
                     checked: (file.priority !== FilePriority.Ignored),
-                    name: escapeHtml(file.name),
+                    fileName: name,
+                    name: fileName(name),
                     size: file.size,
-                    progress: (file.progress * 100).round(1),
+                    progress: progress,
                     priority: normalizePriority(file.priority),
                     remaining: (file.size * (1.0 - file.progress)),
                     availability: file.availability
@@ -264,16 +266,10 @@ var loadTorrentFilesData = function() {
                 if ((row.progress === 100) && (file.progress < 1))
                     row.progress = 99.9;
 
-                ++i;
-                torrentFilesTable.updateRowData(row);
-            }.bind(this));
+                files.push(row);
+            });
 
-            torrentFilesTable.updateTable(false);
-            torrentFilesTable.altRow();
-
-            if (selectedFiles.length > 0)
-                torrentFilesTable.reselectRows(selectedFiles);
-
+            addFilesToTable(files);
             setGlobalCheckboxState();
         }
     }).send();
@@ -282,6 +278,108 @@ var loadTorrentFilesData = function() {
 var updateTorrentFilesData = function() {
     clearTimeout(loadTorrentFilesDataTimer);
     loadTorrentFilesData();
+};
+
+var addFilesToTable = function(files) {
+    var selectedFiles = torrentFilesTable.selectedRowsIds();
+    var rowId = 0;
+
+    var FileNode = new Class({
+        name: "",
+        size: 0,
+        data: null,
+        root: null,
+        children: [],
+
+        initialize: function(name, size, root, data) {
+            this.name = name;
+            this.size = size;
+            this.root = root;
+            this.data = data;
+        },
+        addChild: function(node) {
+            this.children.push(node);
+        },
+        // fullName: function() {
+        //     if (this.root === null)
+        //         return '/' + this.name;
+        //     return this.root.fullName() + '/' + this.name;
+        // }
+    })
+
+    var rootNode = new FileNode(null, null, null, null);
+    files.each(function(file) {
+        // TODO folders should sort properly
+        // TODO add folder icon to folder rows
+        // TODO setting the priority on a folder should set all its subchildren, recursively
+        // TODO figure out ".unwanted" and QBT_EXT, and if those settings are being honored like the GUI
+        // TODO see functionality in TorrentContentModelFolder and TorrentContentModelFile
+        // TODO does the GUI do anything else special for the content table? any other logic like QBT_EXT or .unwanted?
+
+        var parent = rootNode;
+
+        var path = fromNativePath(file.fileName);
+        var pathFolders = path.split('/');
+        pathFolders.pop();
+        pathFolders.each(function(folder) {
+            if (folder === '.unwanted')
+                return;
+
+            var parentNode = null;
+            if (parent.children !== null) {
+                for (var i = 0; i < parent.children.length; ++i) {
+                    var childFolder = parent.children[i];
+                    if (childFolder.name === folder) {
+                        parentNode = childFolder;
+                        break;
+                    }
+                }
+            }
+            if (parentNode === null) {
+                parentNode = new FileNode(folder, 0, parent, null);
+                parent.addChild(parentNode);
+            }
+
+            parent = parentNode;
+        });
+
+        parent.addChild(new FileNode(file.name, file.size, parent, file));
+    }.bind(this));
+
+    var addChildrenToTable = function(node) {
+        if (node.data) {
+            node.data.rowId = rowId;
+            torrentFilesTable.updateRowData(node.data);
+        }
+        else {
+            torrentFilesTable.updateRowData({
+                rowId: rowId,
+                fileId: -1,
+                checked: false,
+                name: node.name,
+                size: 0,
+                progress: 0,
+                priority: normalizePriority(1),
+                remaining: 0,
+                availability: 0
+            });
+        }
+        ++rowId;
+
+        node.children.each(function(child) {
+            addChildrenToTable(child);
+        });
+
+    };
+
+    rootNode.children.each(function(child) {
+        addChildrenToTable(child);
+    });
+    torrentFilesTable.updateTable(false);
+    torrentFilesTable.altRow();
+
+    if (selectedFiles.length > 0)
+        torrentFilesTable.reselectRows(selectedFiles);
 };
 
 var torrentFilesContextMenu = new ContextMenu({
@@ -340,8 +438,8 @@ var torrentFilesContextMenu = new ContextMenu({
 
 var renameFileFN = function(fileId) {
     var row = torrentFilesTable.rows.get(fileId);
-    var name = encodeURIComponent(fileName(row.full_data.name));
-    var fileId = row.full_data.rowId;
+    var name = encodeURIComponent(row.full_data.name);
+    var fileId = row.full_data.fileId;
     new MochaUI.Window({
         id: 'renamePage',
         title: "QBT_TR(Rename)QBT_TR[CONTEXT=PropertiesWidget]",

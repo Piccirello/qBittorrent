@@ -1624,11 +1624,11 @@ var TorrentFilesTable = new Class({
                 updateDownloadCheckbox(id, value);
             }
             else {
-                var tree_img = new Element('img', {
+                var treeImg = new Element('img', {
                     src: 'images/L.gif',
                     style: 'margin-bottom: -2px'
                 });
-                td.adopt(tree_img, createDownloadCheckbox(row.rowId, value));
+                td.adopt(treeImg, createDownloadCheckbox(row.rowId, value));
             }
         };
 
@@ -1662,6 +1662,32 @@ var TorrentFilesTable = new Class({
 
         this.columns['remaining'].updateTd = displaySize;
         this.columns['availability'].updateTd = displayPercentage;
+    },
+
+    getFilteredAndSortedRows: function() {
+        // TODO do sorting by folders here
+        var filteredRows = [];
+
+        var rows = this.rows.getValues();
+        // var filterText = $('torrentFilesFilterInput').value.trim().toLowerCase();
+        // var filterTerms = (filterText.length > 0) ? filterText.split(" ") : null;
+
+        // for (var i = 0; i < rows.length; ++i) {
+            // if (this.applyFilter(rows[i], selected_filter, selected_category, filterTerms)) {
+                // filteredRows.push(rows[i]);
+                // filteredRows[rows[i].rowId] = rows[i];
+            // }
+        // }
+
+        filteredRows.sort(function(row1, row2) {
+            var column = this.columns[this.sortedColumn];
+            var res = column.compareRows(row1, row2);
+            if (this.reverseSort == '0')
+                return res;
+            else
+                return -res;
+        }.bind(this));
+        return filteredRows;
     }
 });
 

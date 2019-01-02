@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <libtorrent/version.hpp>
 #include <queue>
 #include <stdexcept>
 #include <vector>
@@ -228,6 +229,7 @@ void WebApplication::translateDocument(QString &data)
 
         data.replace(QLatin1String("${LANG}"), m_currentLocale.left(2));
         data.replace(QLatin1String("${VERSION}"), QBT_VERSION);
+        data.replace(QLatin1String("${LIBTORRENT_VERSION}"), LIBTORRENT_VERSION);
     }
 }
 

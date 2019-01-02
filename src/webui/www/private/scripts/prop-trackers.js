@@ -192,14 +192,7 @@ var removeTrackerFN = function(element) {
 
 new ClipboardJS('#CopyTrackerUrl', {
     text: function(trigger) {
-        var selectedTrackers = torrentTrackersTable.selectedRowsIds();
-        if (selectedTrackers.length > 0) {
-            var url = selectedTrackers[0];
-            for (var i = 1; i < selectedTrackers.length; ++i)
-                url += "\n" + selectedTrackers[i];
-            selectedTrackers = [];
-            return url;
-        }
+        return torrentTrackersTable.selectedRowsIds().join("\n");
     }
 });
 

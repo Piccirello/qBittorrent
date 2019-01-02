@@ -780,3 +780,11 @@ var initializeWindows = function() {
         });
     });
 };
+
+// TODO test this
+function addTab(li) {
+    li.addEvent('click', function(e){
+        // TODO if selected() doesn't work then implement the logic here manually
+        MochaUI.selected(this, this.parentNode);
+    });
+}

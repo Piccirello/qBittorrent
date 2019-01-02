@@ -963,6 +963,9 @@ void TorrentsController::renameFileAction()
     if ((id < 0) || (id >= filesCount))
         throw APIError(APIErrorType::Conflict, tr("File ID is not valid"));
 
+    // TODO support renaming a folder
+    // TODO maybe refactor out the logic from propertieswidget to a shared file?
+    // TODO WebUI multiple search tabs
     if (name.endsWith(QB_EXT))
         name.chop(QB_EXT.size());
     const QString oldFileName = torrent->fileName(id);
