@@ -1523,6 +1523,8 @@ int OptionsDialog::getActionOnDblClOnTorrentFn() const
 
 void OptionsDialog::on_generateAuthTokenButton_clicked()
 {
+    // TODO move option to separate window, like IP Subnet Whitelist
+    // TODO support giving each token a name
     const QUuid authToken = QUuid::createUuid();
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
     const QString authTokenString = authToken.toString(QUuid::WithoutBraces);

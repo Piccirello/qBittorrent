@@ -35,6 +35,7 @@
 #include "isessionmanager.h"
 #include "webauth.h"
 
+// TODO add feature to webui (viewing and setting)
 void AuthController::loginAction()
 {
     if (sessionManager()->session()) {
