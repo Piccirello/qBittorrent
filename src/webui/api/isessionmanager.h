@@ -36,6 +36,7 @@ struct ISession
 {
     virtual ~ISession() = default;
     virtual QString id() const = 0;
+    virtual QString token() const = 0;
     virtual QVariant getData(const QString &id) const = 0;
     virtual void setData(const QString &id, const QVariant &data) = 0;
 
@@ -50,6 +51,6 @@ struct ISessionManager
     virtual ~ISessionManager() = default;
     virtual QString clientId() const = 0;
     virtual ISession *session() = 0;
-    virtual void sessionStart() = 0;
+    virtual void sessionStart(const QString &token = QString()) = 0;
     virtual void sessionEnd() = 0;
 };

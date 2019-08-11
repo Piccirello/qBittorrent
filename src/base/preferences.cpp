@@ -59,6 +59,7 @@
 #include "global.h"
 #include "settingsstorage.h"
 #include "utils/fs.h"
+#include "utils/string.h"
 
 Preferences *Preferences::m_instance = nullptr;
 
@@ -555,6 +556,16 @@ void Preferences::setWebUiAuthSubnetWhitelist(QStringList subnets)
     });
 
     setValue("Preferences/WebUI/AuthSubnetWhitelist", subnets);
+}
+
+QStringList Preferences::getWebUiAuthTokens() const
+{
+    return value("Preferences/WebUI/AuthTokens").toStringList();
+}
+
+void Preferences::setWebUiAuthTokens(const QStringList &tokens)
+{
+    setValue("Preferences/WebUI/AuthTokens", tokens);
 }
 
 QString Preferences::getServerDomains() const

@@ -48,6 +48,7 @@ public:
     void increaseFailedAttempts(const QString &clientId);
     void clearFailedAttempts(const QString &clientId);
     bool isUserAuthValid(const QString &username, const QString &secret) const;
+    bool isTokenValid(const QString &token) const;
 
 private:
     struct FailedLogin

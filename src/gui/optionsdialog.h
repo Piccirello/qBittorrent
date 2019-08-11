@@ -110,6 +110,10 @@ private slots:
     void setLocale(const QString &localeStr);
     void webUIHttpsCertChanged(const QString &path, ShowError showError);
     void webUIHttpsKeyChanged(const QString &path, ShowError showError);
+    void on_generateAuthTokenButton_clicked();
+    void on_removeAuthTokenButton_clicked();
+    void on_copyAuthTokenClipboardButton_clicked();
+    void handleAuthTokensCurrentItemChanged();
 
 private:
     // Methods
@@ -171,6 +175,7 @@ private:
     int getMaxActiveTorrents() const;
     // WebUI
     bool isWebUiEnabled() const;
+    QStringList webUiAuthTokens() const;
     QString webUiUsername() const;
     QString webUiPassword() const;
     bool webUIAuthenticationOk();

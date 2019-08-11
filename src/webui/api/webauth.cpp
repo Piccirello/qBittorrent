@@ -99,3 +99,17 @@ bool WebAuth::isUserAuthValid(const QString &suppliedUsername, const QString &su
     const bool passwordEqual = Utils::Password::PBKDF2::verify(secret, suppliedSecret);
     return (usernameEqual && passwordEqual);
 }
+
+bool WebAuth::isTokenValid(const QString &token) const
+{
+    bool tokenAuthenticated = false;
+    const Preferences *const pref = Preferences::instance();
+    for (const QString &storedToken : pref->getWebUiAuthTokens()) {
+        if (Utils::Password::slowEquals(token.toUtf8(), storedToken.toUtf8())) {
+            tokenAuthenticated = true;
+            break;
+        }
+    }
+
+    return tokenAuthenticated;
+}

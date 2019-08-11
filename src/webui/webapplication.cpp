@@ -474,7 +474,8 @@ void WebApplication::sessionInitialize()
     if (!sessionId.isEmpty()) {
         m_currentSession = m_sessions.value(sessionId);
         if (m_currentSession) {
-            if (m_currentSession->hasExpired(m_sessionTimeout)) {
+            if (m_currentSession->hasExpired(m_sessionTimeout)
+                || (m_currentSession->hasAuthToken() && !WebAuth::instance()->isTokenValid(m_currentSession->token()))) {
                 // session is outdated - removing it
                 delete m_sessions.take(sessionId);
                 m_currentSession = nullptr;
@@ -520,14 +521,16 @@ bool WebApplication::isPublicAPI(const QString &scope, const QString &action) co
     return m_publicAPIs.contains(QString::fromLatin1("%1/%2").arg(scope, action));
 }
 
-void WebApplication::sessionStart()
+void WebApplication::sessionStart(const QString &token)
 {
     Q_ASSERT(!m_currentSession);
 
+    const WebAuth *const webAuth = WebAuth::instance();
     // remove outdated sessions
-    Algorithm::removeIf(m_sessions, [this](const QString &, const WebSession *session)
+    Algorithm::removeIf(m_sessions, [this, webAuth](const QString &, const WebSession *session)
     {
-        if (session->hasExpired(m_sessionTimeout)) {
+        if (session->hasExpired(m_sessionTimeout)
+            || (session->hasAuthToken() && !webAuth->isTokenValid(session->token()))) {
             delete session;
             return true;
         }
@@ -535,7 +538,7 @@ void WebApplication::sessionStart()
         return false;
     });
 
-    m_currentSession = new WebSession(generateSid());
+    m_currentSession = new WebSession(generateSid(), token);
     m_sessions[m_currentSession->id()] = m_currentSession;
 
     QNetworkCookie cookie(C_SID, m_currentSession->id().toUtf8());
@@ -641,8 +644,9 @@ bool WebApplication::validateHostHeader(const QStringList &domains) const
 
 // WebSession
 
-WebSession::WebSession(const QString &sid)
+WebSession::WebSession(const QString &sid, const QString &token)
     : m_sid {sid}
+    , m_token(token)
 {
     updateTimestamp();
 }
@@ -650,6 +654,16 @@ WebSession::WebSession(const QString &sid)
 QString WebSession::id() const
 {
     return m_sid;
+}
+
+QString WebSession::token() const
+{
+    return m_token;
+}
+
+bool WebSession::hasAuthToken() const
+{
+    return !m_token.isNull();
 }
 
 bool WebSession::hasExpired(const qint64 seconds) const

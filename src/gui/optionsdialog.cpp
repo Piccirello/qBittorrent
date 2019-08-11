@@ -32,6 +32,7 @@
 #include <limits>
 
 #include <QApplication>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QDebug>
 #include <QDesktopServices>
@@ -41,6 +42,7 @@
 #include <QMessageBox>
 #include <QSystemTrayIcon>
 #include <QTranslator>
+#include <QUuid>
 
 #include "base/bittorrent/session.h"
 #include "base/global.h"
@@ -171,6 +173,7 @@ OptionsDialog::OptionsDialog(QWidget *parent)
     connect(ScanFoldersModel::instance(), &QAbstractListModel::dataChanged, this, &ThisType::enableApplyButton);
     connect(m_ui->scanFoldersView->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ThisType::handleScanFolderViewSelectionChanged);
 
+    connect(m_ui->authTokensView, &QListWidget::itemSelectionChanged, this, &OptionsDialog::handleAuthTokensCurrentItemChanged);
     connect(m_ui->buttonBox, &QDialogButtonBox::clicked, this, &OptionsDialog::applySettings);
     // Languages supported
     initializeLanguageCombo();
@@ -293,6 +296,8 @@ OptionsDialog::OptionsDialog(QWidget *parent)
     connect(m_ui->mailNotifPassword, &QLineEdit::textChanged, this, &ThisType::enableApplyButton);
     connect(m_ui->autoRunBox, &QGroupBox::toggled, this, &ThisType::enableApplyButton);
     connect(m_ui->lineEditAutoRun, &QLineEdit::textChanged, this, &ThisType::enableApplyButton);
+    connect(m_ui->generateAuthTokenButton, &QAbstractButton::clicked, this, &ThisType::enableApplyButton);
+    connect(m_ui->removeAuthTokenButton, &QAbstractButton::clicked, this, &ThisType::enableApplyButton);
 
     const QString autoRunStr = QString("%1\n    %2\n    %3\n    %4\n    %5\n    %6\n    %7\n    %8\n    %9\n    %10\n    %11\n%12")
         .arg(tr("Supported parameters (case sensitive):")
@@ -773,6 +778,7 @@ void OptionsDialog::saveOptions()
         pref->setWebUIHttpsKeyPath(m_ui->textWebUIHttpsKey->selectedPath());
         pref->setWebUISessionTimeout(m_ui->spinSessionTimeout->value());
         // Authentication
+        pref->setWebUiAuthTokens(webUiAuthTokens());
         pref->setWebUiUsername(webUiUsername());
         if (!webUiPassword().isEmpty())
             pref->setWebUIPassword(Utils::Password::PBKDF2::generate(webUiPassword()));
@@ -1139,6 +1145,12 @@ void OptionsDialog::loadOptions()
     m_ui->checkBypassAuthSubnetWhitelist->setChecked(pref->isWebUiAuthSubnetWhitelistEnabled());
     m_ui->IPSubnetWhitelistButton->setEnabled(m_ui->checkBypassAuthSubnetWhitelist->isChecked());
     m_ui->spinSessionTimeout->setValue(pref->getWebUISessionTimeout());
+
+    // initialize authentication tokens in ui
+    for (const QString &token : pref->getWebUiAuthTokens()) {
+        new QListWidgetItem(token, m_ui->authTokensView);
+    }
+    handleAuthTokensCurrentItemChanged();
 
     // Security
     m_ui->checkClickjacking->setChecked(pref->isWebUiClickjackingProtectionEnabled());
@@ -1509,6 +1521,41 @@ int OptionsDialog::getActionOnDblClOnTorrentFn() const
     return m_ui->actionTorrentFnOnDblClBox->currentIndex();
 }
 
+void OptionsDialog::on_generateAuthTokenButton_clicked()
+{
+    const QUuid authToken = QUuid::createUuid();
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 11, 0))
+    const QString authTokenString = authToken.toString(QUuid::WithoutBraces);
+#else
+    const QString authTokenString = authToken.toString().mid(1, 36);
+#endif
+    new QListWidgetItem(authTokenString, m_ui->authTokensView);
+}
+
+void OptionsDialog::on_removeAuthTokenButton_clicked()
+{
+    const QList<QListWidgetItem *> selectedItems = m_ui->authTokensView->selectedItems();
+
+    for (const QListWidgetItem *item : selectedItems) {
+        m_ui->authTokensView->takeItem(m_ui->authTokensView->row(item));
+    }
+
+    handleAuthTokensCurrentItemChanged();
+}
+
+void OptionsDialog::on_copyAuthTokenClipboardButton_clicked()
+{
+    const QString selectedAuthToken = m_ui->authTokensView->selectedItems().first()->text();
+    QApplication::clipboard()->setText(selectedAuthToken);
+}
+
+void OptionsDialog::handleAuthTokensCurrentItemChanged()
+{
+    const bool enabled = !m_ui->authTokensView->selectedItems().isEmpty();
+    m_ui->removeAuthTokenButton->setEnabled(enabled);
+    m_ui->copyAuthTokenClipboardButton->setEnabled(enabled);
+}
+
 void OptionsDialog::on_addScanFolderButton_clicked()
 {
     Preferences *const pref = Preferences::instance();
@@ -1581,6 +1628,17 @@ QString OptionsDialog::getFilter() const
 bool OptionsDialog::isWebUiEnabled() const
 {
     return m_ui->checkWebUi->isChecked();
+}
+
+QStringList OptionsDialog::webUiAuthTokens() const
+{
+    QStringList tokens = QStringList();
+
+    for (int i = 0; i < m_ui->authTokensView->count(); ++i) {
+        tokens << m_ui->authTokensView->item(i)->text();
+    }
+
+    return tokens;
 }
 
 QString OptionsDialog::webUiUsername() const

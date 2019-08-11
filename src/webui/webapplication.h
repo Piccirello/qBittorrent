@@ -53,10 +53,12 @@ constexpr char C_SID[] = "SID"; // name of session id cookie
 class WebSession : public ISession
 {
 public:
-    explicit WebSession(const QString &sid);
+    explicit WebSession(const QString &sid, const QString &token);
 
     QString id() const override;
+    QString token() const override;
 
+    bool hasAuthToken() const;
     bool hasExpired(qint64 seconds) const;
     void updateTimestamp();
 
@@ -65,6 +67,7 @@ public:
 
 private:
     const QString m_sid;
+    const QString m_token;
     QElapsedTimer m_timer;  // timestamp
     QVariantHash m_data;
 };
@@ -89,7 +92,7 @@ public:
 
     QString clientId() const override;
     WebSession *session() override;
-    void sessionStart() override;
+    void sessionStart(const QString &token = QString()) override;
     void sessionEnd() override;
 
     const Http::Request &request() const;

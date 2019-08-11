@@ -45,6 +45,7 @@ void AuthController::loginAction()
     const QString clientAddr {sessionManager()->clientId()};
     const QString usernameFromWeb {params()["username"]};
     const QString passwordFromWeb {params()["password"]};
+    const QString token {params()["token"]};
 
     WebAuth *const webAuth = WebAuth::instance();
     if (webAuth->isBanned(clientAddr)) {
@@ -55,13 +56,22 @@ void AuthController::loginAction()
                        , tr("Your IP address has been banned after too many failed authentication attempts."));
     }
 
-    const bool userAuthenticated = webAuth->isUserAuthValid(usernameFromWeb, passwordFromWeb);
-    if (userAuthenticated) {
+    const bool useUserAuth = (!usernameFromWeb.isNull() && !passwordFromWeb.isNull());
+    const bool useTokenAuth = !token.isNull();
+    const bool userAuthenticated = (useUserAuth ? webAuth->isUserAuthValid(usernameFromWeb, passwordFromWeb) : false);
+    const bool tokenAuthenticated = ((!userAuthenticated && useTokenAuth) ? webAuth->isTokenValid(token) : false);
+
+    if (userAuthenticated || tokenAuthenticated) {
         webAuth->clearFailedAttempts(clientAddr);
 
-        sessionManager()->sessionStart();
+        if (userAuthenticated)
+            sessionManager()->sessionStart();
+        else
+            sessionManager()->sessionStart(token);
+
         setResult(QLatin1String("Ok."));
-        LogMsg(tr("WebAPI login success. IP: %1").arg(clientAddr));
+        LogMsg(tr("WebAPI login success. Credentials: %1, IP: %2")
+            .arg(userAuthenticated ? "user" : "token", clientAddr));
     }
     else {
         webAuth->increaseFailedAttempts(clientAddr);

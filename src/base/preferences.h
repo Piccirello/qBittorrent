@@ -190,6 +190,8 @@ public:
     void setWebUiAuthSubnetWhitelistEnabled(bool enabled);
     QVector<Utils::Net::Subnet> getWebUiAuthSubnetWhitelist() const;
     void setWebUiAuthSubnetWhitelist(QStringList subnets);
+    QStringList getWebUiAuthTokens() const;
+    void setWebUiAuthTokens(const QStringList &tokens);
     QString getWebUiUsername() const;
     void setWebUiUsername(const QString &username);
     QByteArray getWebUIPassword() const;
