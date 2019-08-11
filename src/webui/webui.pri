@@ -12,6 +12,7 @@ HEADERS += \
     $$PWD/api/torrentscontroller.h \
     $$PWD/api/transfercontroller.h \
     $$PWD/api/serialize/serialize_torrent.h \
+    $$PWD/api/webauth.h \
     $$PWD/webapplication.h \
     $$PWD/webui.h
 
@@ -28,6 +29,7 @@ SOURCES += \
     $$PWD/api/torrentscontroller.cpp \
     $$PWD/api/transfercontroller.cpp \
     $$PWD/api/serialize/serialize_torrent.cpp \
+    $$PWD/api/webauth.cpp \
     $$PWD/webapplication.cpp \
     $$PWD/webui.cpp
 

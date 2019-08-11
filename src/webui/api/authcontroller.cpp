@@ -28,17 +28,12 @@
 
 #include "authcontroller.h"
 
-#include <QDateTime>
 #include <QString>
 
 #include "base/logger.h"
-#include "base/preferences.h"
-#include "base/utils/password.h"
 #include "apierror.h"
 #include "isessionmanager.h"
-
-constexpr int BAN_TIME = 3600000; // 1 hour
-constexpr int MAX_AUTH_FAILED_ATTEMPTS = 5;
+#include "webauth.h"
 
 void AuthController::loginAction()
 {
@@ -51,7 +46,8 @@ void AuthController::loginAction()
     const QString usernameFromWeb {params()["username"]};
     const QString passwordFromWeb {params()["password"]};
 
-    if (isBanned()) {
+    WebAuth *const webAuth = WebAuth::instance();
+    if (webAuth->isBanned(clientAddr)) {
         LogMsg(tr("WebAPI login failure. Reason: IP has been banned, IP: %1, username: %2")
                 .arg(clientAddr, usernameFromWeb)
             , Log::WARNING);
@@ -59,25 +55,19 @@ void AuthController::loginAction()
                        , tr("Your IP address has been banned after too many failed authentication attempts."));
     }
 
-    const Preferences *pref = Preferences::instance();
-
-    const QString username {pref->getWebUiUsername()};
-    const QByteArray secret {pref->getWebUIPassword()};
-    const bool usernameEqual = Utils::Password::slowEquals(usernameFromWeb.toUtf8(), username.toUtf8());
-    const bool passwordEqual = Utils::Password::PBKDF2::verify(secret, passwordFromWeb);
-
-    if (usernameEqual && passwordEqual) {
-        m_clientFailedLogins.remove(clientAddr);
+    const bool userAuthenticated = webAuth->isUserAuthValid(usernameFromWeb, passwordFromWeb);
+    if (userAuthenticated) {
+        webAuth->clearFailedAttempts(clientAddr);
 
         sessionManager()->sessionStart();
         setResult(QLatin1String("Ok."));
         LogMsg(tr("WebAPI login success. IP: %1").arg(clientAddr));
     }
     else {
-        increaseFailedAttempts();
+        webAuth->increaseFailedAttempts(clientAddr);
         setResult(QLatin1String("Fails."));
         LogMsg(tr("WebAPI login failure. Reason: invalid credentials, attempt count: %1, IP: %2, username: %3")
-                .arg(QString::number(failedAttemptsCount()), clientAddr, usernameFromWeb)
+                .arg(QString::number(webAuth->failedAttemptsCount(clientAddr)), clientAddr, usernameFromWeb)
             , Log::WARNING);
     }
 }
@@ -85,35 +75,4 @@ void AuthController::loginAction()
 void AuthController::logoutAction()
 {
     sessionManager()->sessionEnd();
-}
-
-bool AuthController::isBanned() const
-{
-    const qint64 now = QDateTime::currentMSecsSinceEpoch() / 1000;
-    const FailedLogin failedLogin = m_clientFailedLogins.value(sessionManager()->clientId());
-
-    bool isBanned = (failedLogin.bannedAt > 0);
-    if (isBanned && ((now - failedLogin.bannedAt) > BAN_TIME)) {
-        m_clientFailedLogins.remove(sessionManager()->clientId());
-        isBanned = false;
-    }
-
-    return isBanned;
-}
-
-int AuthController::failedAttemptsCount() const
-{
-    return m_clientFailedLogins.value(sessionManager()->clientId()).failedAttemptsCount;
-}
-
-void AuthController::increaseFailedAttempts()
-{
-    FailedLogin &failedLogin = m_clientFailedLogins[sessionManager()->clientId()];
-    ++failedLogin.failedAttemptsCount;
-
-    if (failedLogin.failedAttemptsCount == MAX_AUTH_FAILED_ATTEMPTS) {
-        // Max number of failed attempts reached
-        // Start ban period
-        failedLogin.bannedAt = QDateTime::currentMSecsSinceEpoch() / 1000;
-    }
 }

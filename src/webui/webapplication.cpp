@@ -60,6 +60,7 @@
 #include "api/synccontroller.h"
 #include "api/torrentscontroller.h"
 #include "api/transfercontroller.h"
+#include "api/webauth.h"
 
 constexpr int MAX_ALLOWED_FILESIZE = 10 * 1024 * 1024;
 
@@ -133,6 +134,7 @@ WebApplication::WebApplication(QObject *parent)
 
 WebApplication::~WebApplication()
 {
+    WebAuth::freeInstance();
     // cleanup sessions data
     qDeleteAll(m_sessions);
 }

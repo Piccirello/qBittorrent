@@ -1,6 +1,6 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2018  Vladimir Golovnev <glassez@yandex.ru>
+ * Copyright (C) 2019  Thomas Piccirello <thomas.piccirello@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,19 +28,34 @@
 
 #pragma once
 
-#include "apicontroller.h"
+#include <QByteArray>
+#include <QHash>
+#include <QObject>
+#include <QString>
 
-class QString;
-
-class AuthController : public APIController
+class WebAuth : public QObject
 {
     Q_OBJECT
-    Q_DISABLE_COPY(AuthController)
+    Q_DISABLE_COPY(WebAuth)
 
 public:
-    using APIController::APIController;
+    WebAuth() = default;
+    static WebAuth *instance();
+    static void freeInstance();
 
-private slots:
-    void loginAction();
-    void logoutAction();
+    bool isBanned(const QString &clientId) const;
+    int failedAttemptsCount(const QString &clientId) const;
+    void increaseFailedAttempts(const QString &clientId);
+    void clearFailedAttempts(const QString &clientId);
+    bool isUserAuthValid(const QString &username, const QString &secret) const;
+
+private:
+    struct FailedLogin
+    {
+        int failedAttemptsCount = 0;
+        qint64 bannedAt = 0;
+    };
+
+    static WebAuth *m_instance;
+    mutable QHash<QString, FailedLogin> m_clientFailedLogins;
 };

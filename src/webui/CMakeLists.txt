@@ -13,6 +13,7 @@ api/synccontroller.h
 api/torrentscontroller.h
 api/transfercontroller.h
 api/serialize/serialize_torrent.h
+api/webauth.h
 webapplication.h
 webui.h
 
@@ -29,6 +30,7 @@ api/synccontroller.cpp
 api/torrentscontroller.cpp
 api/transfercontroller.cpp
 api/serialize/serialize_torrent.cpp
+api/webauth.cpp
 webapplication.cpp
 webui.cpp
 )
