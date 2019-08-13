@@ -40,13 +40,10 @@ RUN wget $LIBTORRENT_SRC -O libtorrent.zip \
 
 WORKDIR /usr/qbittorrent
 
-ENV QBITTORRENT_SRC https://github.com/qbittorrent/qBittorrent/archive/master.zip
+COPY . .
 
-# download, build, and install qbittorrent
-RUN wget $QBITTORRENT_SRC -O qbittorrent.zip \
-    && bsdtar --strip-components=1 -xf ./qbittorrent.zip \
-    && rm qbittorrent.zip \
-    && ./configure --prefix=/usr --disable-gui \
+# build and install qbittorrent
+RUN ./configure --prefix=/usr --disable-gui \
     && make -j$(nproc) \
     && make install
 
