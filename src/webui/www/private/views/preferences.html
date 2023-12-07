@@ -80,6 +80,11 @@
         </table>
     </fieldset>
 
+    <div class="formRow" style="margin-bottom: 3px;">
+        <input type="checkbox" id="statusBarExternalIP">
+        <label for="statusBarExternalIP">QBT_TR(Show external IP in status bar)QBT_TR[CONTEXT=OptionsDialog]</label>
+    </div>
+
     <div class="formRow" style="margin-bottom: 5px;">
         <input type="checkbox" id="performanceWarning">
         <label for="performanceWarning">QBT_TR(Log performance warnings)QBT_TR[CONTEXT=OptionsDialog]</label>
@@ -2410,6 +2415,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
                     // WebUI tab
                     // Language
                     updateWebuiLocaleSelect(pref.locale);
+                    $("statusBarExternalIP").checked = pref.status_bar_external_ip;
                     $("performanceWarning").checked = pref.performance_warning;
 
                     // HTTP Server
@@ -2835,6 +2841,7 @@ Use ';' to split multiple entries. Can use wildcard '*'.)QBT_TR[CONTEXT=OptionsD
             // WebUI tab
             // Language
             settings["locale"] = $("locale_select").value;
+            settings["status_bar_external_ip"] = $("statusBarExternalIP").checked;
             settings["performance_warning"] = $("performanceWarning").checked;
 
             // HTTP Server
