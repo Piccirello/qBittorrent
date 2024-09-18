@@ -109,6 +109,7 @@ private slots:
     void setSSLParametersAction();
     void fetchMetadataAction();
     void parseMetadataAction();
+    void saveMetadataAction();
 
 private:
     void onDownloadFinished(const Net::DownloadResult &result);
