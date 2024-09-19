@@ -39,6 +39,7 @@ window.qBittorrent.AddTorrent ??= (() => {
 
     let categories = {};
     let defaultSavePath = "";
+    let defaultTempPath = "";
     let windowId = "";
     let source = "";
 
@@ -71,17 +72,23 @@ window.qBittorrent.AddTorrent ??= (() => {
         const pref = window.parent.qBittorrent.Cache.preferences.get();
 
         defaultSavePath = pref.save_path;
+        defaultTempPath = pref.temp_path;
         document.getElementById("savepath").value = defaultSavePath;
         document.getElementById("startTorrent").checked = !pref.add_stopped_enabled;
         document.getElementById("addToTopOfQueue").checked = pref.add_to_top_of_queue;
 
+        document.getElementById("useDownloadPath").checked = pref.temp_path_enabled;
+        changeUseDownloadPath(pref.temp_path_enabled);
+
+        const autoTMM = document.getElementById("autoTMM");
         if (pref.auto_tmm_enabled) {
-            document.getElementById("autoTMM").selectedIndex = 1;
+            autoTMM.selectedIndex = 1;
             document.getElementById("savepath").disabled = true;
         }
         else {
-            document.getElementById("autoTMM").selectedIndex = 0;
+            autoTMM.selectedIndex = 0;
         }
+        changeTMM(autoTMM);
 
         if (pref.torrent_stop_condition === "MetadataReceived")
             document.getElementById("stopCondition").selectedIndex = 1;
@@ -96,6 +103,11 @@ window.qBittorrent.AddTorrent ??= (() => {
             document.getElementById("contentLayout").selectedIndex = 2;
         else
             document.getElementById("contentLayout").selectedIndex = 0;
+    };
+
+    const categorySavePath = (categoryName) => {
+        const category = categories[categoryName];
+        return (category === undefined) ? "" : (category["savePath"] || `${defaultSavePath}/${categoryName}`);
     };
 
     const changeCategorySelect = (item) => {
@@ -114,27 +126,44 @@ window.qBittorrent.AddTorrent ??= (() => {
 
             if (document.getElementById("autoTMM").selectedIndex === 1) {
                 const categoryName = item.value;
-                const category = categories[categoryName];
-                let savePath = defaultSavePath;
-                if (category !== undefined)
-                    savePath = (category["savePath"] !== "") ? category["savePath"] : `${defaultSavePath}/${categoryName}`;
+                const savePath = categorySavePath(categoryName) || defaultSavePath;
                 document.getElementById("savepath").value = savePath;
             }
         }
     };
 
     const changeTMM = (item) => {
+        const savepath = document.getElementById("savepath");
+        const useDownloadPath = document.getElementById("useDownloadPath");
         if (item.selectedIndex === 1) {
-            document.getElementById("savepath").disabled = true;
+            savepath.disabled = true;
 
             const categorySelect = document.getElementById("categorySelect");
             const categoryName = categorySelect.options[categorySelect.selectedIndex].value;
-            const category = categories[categoryName];
-            document.getElementById("savepath").value = (category === undefined) ? "" : category["savePath"];
+            savepath.value = categorySavePath(categoryName);
+
+            useDownloadPath.disabled = true;
+            useDownloadPath.checked = false;
         }
         else {
-            document.getElementById("savepath").disabled = false;
-            document.getElementById("savepath").value = defaultSavePath;
+            savepath.disabled = false;
+            savepath.value = defaultSavePath;
+
+            useDownloadPath.disabled = false;
+        }
+
+        changeUseDownloadPath(useDownloadPath.checked);
+    };
+
+    const changeUseDownloadPath = (enabled) => {
+        const downloadPath = document.getElementById("downloadPath");
+        if (enabled) {
+            downloadPath.disabled = false;
+            downloadPath.value = defaultTempPath;
+        }
+        else {
+            downloadPath.disabled = true;
+            downloadPath.value = "";
         }
     };
 
@@ -237,6 +266,10 @@ window.qBittorrent.AddTorrent ??= (() => {
 
         getPreferences();
         getCategories();
+    });
+
+    window.addEventListener("DOMContentLoaded", (event) => {
+        document.getElementById("useDownloadPath").addEventListener("change", (e) => changeUseDownloadPath(e.target.checked));
     });
 
     return exports();
