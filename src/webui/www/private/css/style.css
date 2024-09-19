@@ -661,6 +661,16 @@ td.generalLabel {
     width: 1px;
 }
 
+td.fullWidth {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+}
+
+td.noWrap {
+    white-space: nowrap;
+}
+
 .filesTableCollapseIcon {
     cursor: pointer;
     height: 15px;
@@ -823,7 +833,7 @@ td.statusBarSeparator {
     cursor: pointer;
 }
 
-#torrentFilesTableDiv .dynamicTable tr.nonAlt:hover {
+#torrentFilesTableDiv .dynamicTable tr.nonAlt:hover, #addTorrentFilesTableDiv .dynamicTable tr.nonAlt:hover {
     background-color: var(--color-background-hover);
     color: var(--color-text-white);
 }
