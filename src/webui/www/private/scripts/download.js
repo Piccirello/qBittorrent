@@ -29,6 +29,7 @@ window.qBittorrent.Download ??= (() => {
         return {
             changeCategorySelect: changeCategorySelect,
             changeTMM: changeTMM,
+            changeUseDownloadPath: changeUseDownloadPath,
             loadMetadata: loadMetadata,
             metadataCompleted: metadataCompleted,
             populateMetadata: populateMetadata,
@@ -128,10 +129,29 @@ window.qBittorrent.Download ??= (() => {
             const categoryName = categorySelect.options[categorySelect.selectedIndex].value;
             const category = categories[categoryName];
             $("savepath").value = (category === undefined) ? "" : category["savePath"];
+
+            $("useDownloadPath").disabled = true;
+            $("useDownloadPath").checked = false;
+            $("downloadPath").disabled = true;
+            $("downloadPath").value = "";
         }
         else {
             $("savepath").disabled = false;
             $("savepath").value = defaultSavePath;
+
+            $("useDownloadPath").disabled = false;
+            $("downloadPath").disabled = false;
+        }
+    };
+
+    const changeUseDownloadPath = function(elem) {
+        if (elem.checked) {
+            $("downloadPath").disabled = false;
+            $("downloadPath").value = defaultSavePath;
+        }
+        else {
+            $("downloadPath").disabled = true;
+            $("downloadPath").value = "";
         }
     };
 
