@@ -28,6 +28,7 @@ window.qBittorrent.Download ??= (() => {
     const exports = () => {
         return {
             changeCategorySelect: changeCategorySelect,
+            changeTagsSelect: changeTagsSelect,
             changeTMM: changeTMM,
             changeUseDownloadPath: changeUseDownloadPath,
             loadMetadata: loadMetadata,
@@ -38,6 +39,7 @@ window.qBittorrent.Download ??= (() => {
     };
 
     let categories = {};
+    let tags = [];
     let defaultSavePath = "";
     let windowId = "";
     let source;
@@ -60,6 +62,36 @@ window.qBittorrent.Download ??= (() => {
                         option.textContent = category.name;
                         $("categorySelect").appendChild(option);
                     }
+                }
+            }
+        }).send();
+    };
+
+    const getTags = function() {
+        new Request.JSON({
+            url: "api/v2/torrents/tags",
+            method: "get",
+            noCache: true,
+            onSuccess: function(data) {
+                if (data) {
+                    tags = data;
+
+                    for (const tag of tags) {
+                        const option = new Element("option");
+                        option.value = tag;
+                        option.textContent = tag;
+                        $("tagsSelect").appendChild(option);
+                    }
+
+                    new vanillaSelectBox("#tagsSelect", {
+                        maxHeight: 200,
+                        search: false,
+                        disableSelectAll: true,
+                        translations: {
+                            all: "QBT_TR(All)QBT_TR[CONTEXT=ExecutionLogWidget]",
+                        },
+                        keepInlineStyles: false
+                    });
                 }
             }
         }).send();
@@ -119,6 +151,11 @@ window.qBittorrent.Download ??= (() => {
                 $("savepath").value = savePath;
             }
         }
+    };
+
+    const changeTagsSelect = function(element) {
+        const tags = [...element.options].filter(opt => opt.selected).map(opt => opt.value);
+        $("tags").value = tags.join(",");
     };
 
     const changeTMM = function(item) {
@@ -231,6 +268,7 @@ window.qBittorrent.Download ??= (() => {
     $(window).addEventListener("load", () => {
         getPreferences();
         getCategories();
+        getTags();
     });
 
     return exports();
