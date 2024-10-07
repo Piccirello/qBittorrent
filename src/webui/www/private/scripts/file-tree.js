@@ -115,6 +115,7 @@ window.qBittorrent.FileTree ??= (() => {
         name: "",
         path: "",
         rowId: null,
+        fileId: null,
         size: 0,
         checked: TriState.Unchecked,
         remaining: 0,
@@ -123,7 +124,6 @@ window.qBittorrent.FileTree ??= (() => {
         availability: 0,
         depth: 0,
         root: null,
-        data: null,
         isFolder: false,
         children: [],
     });
@@ -138,6 +138,7 @@ window.qBittorrent.FileTree ??= (() => {
 
         initialize: function() {
             this.isFolder = true;
+            this.fileId = -1;
         },
 
         addChild(node) {
