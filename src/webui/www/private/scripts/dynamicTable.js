@@ -995,9 +995,13 @@ window.qBittorrent.DynamicTable ??= (() => {
             }
         }
 
+        getRowData(row, fullUpdate) {
+            return row[fullUpdate ? "full_data" : "data"];
+        }
+
         updateRow(tr, fullUpdate) {
             const row = this.rows.get(tr.rowId);
-            const data = row[fullUpdate ? "full_data" : "data"];
+            const data = this.getRowData(row, fullUpdate);
 
             const tds = this.getRowCells(tr);
             for (let i = 0; i < this.columns.length; ++i) {
@@ -1009,7 +1013,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 if (this.columns[i].dataProperties.some(prop => Object.hasOwn(data, prop)))
                     this.columns[i].updateTd(tds[i], row);
             }
-            row["data"] = {};
+            row.data = {};
         }
 
         removeRow(rowId) {
@@ -2193,25 +2197,9 @@ window.qBittorrent.DynamicTable ??= (() => {
             node.depth = depth;
             node.parent = parent;
 
-            if (node.isFolder) {
-                const data = {
-                    rowId: node.rowId,
-                    fileId: -1,
-                    checked: node.checked,
-                    path: node.path,
-                    original: node.original,
-                    renamed: node.renamed
-                };
-
-                node.data = data;
-                node.full_data = data;
-                this.updateRowData(data);
-            }
-            else {
-                node.data.rowId = node.rowId;
-                node.full_data = node.data;
-                this.updateRowData(node.data);
-            }
+            this.updateRowData({
+                rowId: node.rowId
+            });
 
             node.children.each((child) => {
                 this.#addNodeToTable(child, depth + 1, node);
@@ -2229,6 +2217,10 @@ window.qBittorrent.DynamicTable ??= (() => {
         getRow(node) {
             const rowId = this.fileTree.getRowId(node).toString();
             return this.rows.get(rowId);
+        }
+
+        getRowData(row, fullUpdate) {
+            return this.getNode(row.rowId);
         }
 
         getSelectedRows() {
@@ -2272,10 +2264,8 @@ window.qBittorrent.DynamicTable ??= (() => {
             }
 
             const nodes = this.fileTree.toArray();
-            for (const node of nodes) {
+            for (const node of nodes)
                 node.checked = (checkbox.checked || checkbox.indeterminate) ? 0 : 1;
-                node.full_data.checked = node.checked;
-            }
 
             this.updateGlobalCheckbox();
         }
@@ -2283,7 +2273,6 @@ window.qBittorrent.DynamicTable ??= (() => {
         toggleNodeTreeCheckbox(rowId, checkState) {
             const node = this.getNode(rowId);
             node.checked = checkState;
-            node.full_data.checked = checkState;
             const checkbox = document.getElementById(`cbRename${rowId}`);
             checkbox.checked = node.checked === 0;
             checkbox.state = checkbox.checked ? "checked" : "unchecked";
@@ -2365,7 +2354,6 @@ window.qBittorrent.DynamicTable ??= (() => {
                         for (const id of ids) {
                             const node = that.getNode(id);
                             node.checked = e.target.checked ? 0 : 1;
-                            node.full_data.checked = node.checked;
                         }
                         that.updateGlobalCheckbox();
                         that.onRowSelectionChange(that.getNode(targetId));
@@ -2427,6 +2415,13 @@ window.qBittorrent.DynamicTable ??= (() => {
                 span.id = fileNameRenamedId;
                 span.textContent = node.renamed;
             };
+
+            for (const column of this.columns) {
+                column["getRowValue"] = function(row, pos = 0) {
+                    const node = that.getNode(row.rowId);
+                    return node[this.dataProperties[pos]];
+                };
+            }
         }
 
         onRowSelectionChange(row) {}
@@ -2439,7 +2434,6 @@ window.qBittorrent.DynamicTable ??= (() => {
                 if (rowIds.includes(tr.rowId)) {
                     const node = this.getNode(tr.rowId);
                     node.checked = 0;
-                    node.full_data.checked = 0;
 
                     const checkbox = tr.querySelector(".RenamingCB");
                     checkbox.state = "checked";
@@ -2458,18 +2452,16 @@ window.qBittorrent.DynamicTable ??= (() => {
             while (stack.length > 0) {
                 const node = stack.pop();
 
-                node.children.sort((row1, row2) => {
+                node.children.sort((node1, node2) => {
                     // list folders before files when sorting by name
                     if (isColumnOriginal) {
-                        const node1 = this.getNode(row1.data.rowId);
-                        const node2 = this.getNode(row2.data.rowId);
                         if (node1.isFolder && !node2.isFolder)
                             return -1;
                         if (!node1.isFolder && node2.isFolder)
                             return 1;
                     }
 
-                    const result = column.compareRows(row1, row2);
+                    const result = column.compareRows(node1, node2);
                     return isReverseSort ? result : -result;
                 });
 
@@ -2579,14 +2571,6 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.prevSortedColumn = this.sortedColumn;
             this.prevReverseSort = this.reverseSort;
             return rows;
-        }
-
-        setIgnored(rowId, ignore) {
-            const row = this.rows.get(rowId);
-            if (ignore)
-                row.full_data.remaining = 0;
-            else
-                row.full_data.remaining = (row.full_data.size * (1.0 - (row.full_data.progress / 100)));
         }
 
         setupCommonEvents() {
@@ -2709,11 +2693,11 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         isAllCheckboxesChecked() {
-            return this.fileTree.toArray().every((node) => node.checked === 1);
+            return this.fileTree.toArray().every((node) => node.checked === window.qBittorrent.FileTree.TriState.Checked);
         }
 
         isAllCheckboxesUnchecked() {
-            return this.fileTree.toArray().every((node) => node.checked !== 1);
+            return this.fileTree.toArray().every((node) => node.checked !== window.qBittorrent.FileTree.TriState.Checked);
         }
 
         populateTable(root) {
@@ -2727,30 +2711,12 @@ window.qBittorrent.DynamicTable ??= (() => {
             node.depth = depth;
             node.parent = parent;
 
-            if (node.isFolder) {
-                if (!this.collapseState.has(node.rowId))
-                    this.collapseState.set(node.rowId, { depth: depth, collapsed: false });
-                const data = {
-                    rowId: node.rowId,
-                    size: node.size,
-                    checked: node.checked,
-                    remaining: node.remaining,
-                    progress: node.progress,
-                    priority: window.qBittorrent.TorrentContent.normalizePriority(node.priority),
-                    availability: node.availability,
-                    fileId: -1,
-                    name: node.name
-                };
+            if (node.isFolder && !this.collapseState.has(node.rowId))
+                this.collapseState.set(node.rowId, { depth: depth, collapsed: false });
 
-                node.data = data;
-                node.full_data = data;
-                this.updateRowData(data, depth);
-            }
-            else {
-                node.data.rowId = node.rowId;
-                node.full_data = node.data;
-                this.updateRowData(node.data);
-            }
+            this.updateRowData({
+                rowId: node.rowId,
+            });
 
             node.children.each((child) => {
                 this.#addNodeToTable(child, depth + 1, node);
@@ -2771,8 +2737,12 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         getRowFileId(rowId) {
-            const row = this.rows.get(rowId);
-            return row?.full_data.fileId;
+            const node = this.getNode(rowId);
+            return node.fileId;
+        }
+
+        getRowData(row, fullUpdate) {
+            return this.getNode(row.rowId);
         }
 
         initColumns() {
@@ -2804,6 +2774,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.columns["checked"].updateTd = function(td, row) {
                 const id = row.rowId;
                 const value = this.getRowValue(row);
+                const fileId = that.getRowFileId(id);
 
                 if (td.firstElementChild === null) {
                     const treeImg = document.createElement("img");
@@ -2814,9 +2785,9 @@ window.qBittorrent.DynamicTable ??= (() => {
 
                 const downloadCheckbox = td.children[1];
                 if (downloadCheckbox === undefined)
-                    td.append(window.qBittorrent.TorrentContent.createDownloadCheckbox(id, row.full_data.fileId, value));
+                    td.append(window.qBittorrent.TorrentContent.createDownloadCheckbox(id, fileId, value));
                 else
-                    window.qBittorrent.TorrentContent.updateDownloadCheckbox(downloadCheckbox, id, row.full_data.fileId, value);
+                    window.qBittorrent.TorrentContent.updateDownloadCheckbox(downloadCheckbox, id, fileId, value);
 
             };
             this.columns["checked"].staticWidth = 50;
@@ -2905,12 +2876,13 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.columns["priority"].updateTd = function(td, row) {
                 const id = row.rowId;
                 const value = this.getRowValue(row);
+                const fileId = that.getRowFileId(id);
 
                 const priorityCombo = td.firstElementChild;
                 if (priorityCombo === null)
-                    td.append(window.qBittorrent.TorrentContent.createPriorityCombo(id, row.full_data.fileId, value));
+                    td.append(window.qBittorrent.TorrentContent.createPriorityCombo(id, fileId, value));
                 else
-                    window.qBittorrent.TorrentContent.updatePriorityCombo(priorityCombo, id, row.full_data.fileId, value);
+                    window.qBittorrent.TorrentContent.updatePriorityCombo(priorityCombo, id, fileId, value);
             };
             this.columns["priority"].staticWidth = 140;
 
@@ -2919,6 +2891,13 @@ window.qBittorrent.DynamicTable ??= (() => {
                 this.columns["remaining"].updateTd = displaySize;
             if (this.columns["availability"])
                 this.columns["availability"].updateTd = displayPercentage;
+
+            for (const column of this.columns) {
+                column["getRowValue"] = function(row, pos = 0) {
+                    const node = that.getNode(row.rowId);
+                    return node[this.dataProperties[pos]];
+                };
+            }
         }
 
         #sortNodesByColumn(root, column) {
@@ -2929,18 +2908,16 @@ window.qBittorrent.DynamicTable ??= (() => {
             while (stack.length > 0) {
                 const node = stack.pop();
 
-                node.children.sort((row1, row2) => {
+                node.children.sort((node1, node2) => {
                     // list folders before files when sorting by name
                     if (isColumnName) {
-                        const node1 = this.getNode(row1.data.rowId);
-                        const node2 = this.getNode(row2.data.rowId);
                         if (node1.isFolder && !node2.isFolder)
                             return -1;
                         if (!node1.isFolder && node2.isFolder)
                             return 1;
                     }
 
-                    const result = column.compareRows(row1, row2);
+                    const result = column.compareRows(node1, node2);
                     return isReverseSort ? result : -result;
                 });
 
@@ -3010,8 +2987,8 @@ window.qBittorrent.DynamicTable ??= (() => {
 
             const generateRowsSignature = () => {
                 const rowsData = [];
-                for (const { full_data } of this.getRowValues())
-                    rowsData.push({ ...full_data, collapsed: this.isCollapsed(full_data.rowId) });
+                for (const { rowId } of this.getRowValues())
+                    rowsData.push({ ...this.getNode(rowId).serialize(), collapsed: this.isCollapsed(rowId) });
                 return JSON.stringify(rowsData);
             };
 
@@ -3045,11 +3022,11 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         setIgnored(rowId, ignore) {
-            const row = this.rows.get(rowId.toString());
+            const node = this.getNode(rowId.toString());
             if (ignore)
-                row.full_data.remaining = 0;
+                node.remaining = 0;
             else
-                row.full_data.remaining = (row.full_data.size * (1.0 - (row.full_data.progress / 100)));
+                node.remaining = (node.size * (1.0 - (node.progress / 100)));
         }
 
         setupCommonEvents() {
