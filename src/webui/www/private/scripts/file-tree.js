@@ -56,10 +56,9 @@ window.qBittorrent.FileTree ??= (() => {
     };
     Object.freeze(TriState);
 
-
     class FileTree {
         root = null;
-        nodeMap = {};
+        #nodeMap = new Map();
 
         setRoot(root) {
             this.root = root;
@@ -76,7 +75,7 @@ window.qBittorrent.FileTree ??= (() => {
         generateNodeMap(node) {
             // don't store root node in map
             if (node.root !== null)
-                this.nodeMap[node.rowId] = node;
+                this.#nodeMap.set(node.rowId, node);
 
             node.children.each((child) => {
                 this.generateNodeMap(child);
@@ -84,9 +83,7 @@ window.qBittorrent.FileTree ??= (() => {
         }
 
         getNode(rowId) {
-            return (this.nodeMap[rowId] === undefined)
-                ? null
-                : this.nodeMap[rowId];
+            return this.#nodeMap.get(Number.parseInt(rowId, 10)) ?? null;
         }
 
         getRowId(node) {
