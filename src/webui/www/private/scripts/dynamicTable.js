@@ -1900,7 +1900,11 @@ window.qBittorrent.DynamicTable ??= (() => {
         prevFilteredRows: [],
         prevSortedColumn: null,
         prevReverseSort: null,
-        fileTree: new window.qBittorrent.FileTree.FileTree(),
+        fileTree: null,
+
+        initialize: function() {
+            this.fileTree = new window.qBittorrent.FileTree.FileTree();
+        },
 
         populateTable: function(root) {
             this.fileTree.setRoot(root);
@@ -2300,7 +2304,11 @@ window.qBittorrent.DynamicTable ??= (() => {
         prevFilteredRows: [],
         prevSortedColumn: null,
         prevReverseSort: null,
-        fileTree: new window.qBittorrent.FileTree.FileTree(),
+        fileTree: null,
+
+        initialize: function() {
+            this.fileTree = new window.qBittorrent.FileTree.FileTree();
+        },
 
         populateTable: function(root) {
             this.fileTree.setRoot(root);
