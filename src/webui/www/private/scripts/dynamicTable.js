@@ -2498,6 +2498,10 @@ window.qBittorrent.DynamicTable ??= (() => {
             }
         },
 
+        recalculateRemaining: function() {
+            this.fileTree.getRoot().recalculateRemaining();
+        },
+
         initColumns: function() {
             this.newColumn("checked", "", "", 50, true);
             this.newColumn("name", "", "QBT_TR(Name)QBT_TR[CONTEXT=TrackerListWidget]", 300, true);

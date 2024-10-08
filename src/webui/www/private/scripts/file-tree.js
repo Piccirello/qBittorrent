@@ -185,6 +185,25 @@ window.qBittorrent.FileTree ??= (() => {
             this.priority = priority;
             this.availability = (availability / size);
         }
+
+        /**
+         * Recursively realculate the amount of data remaining to be downloaded.
+         * This is useful for updating folders' "remaining" size files are unchecked/ignored.
+         */
+        recalculateRemaining() {
+            let remaining = 0;
+
+            this.children.each((node) => {
+                if (node.isFolder)
+                    node.recalculateRemaining();
+
+                const isIgnored = (node.priority === FilePriority.Ignored);
+                if (!isIgnored)
+                    remaining += node.remaining;
+            });
+
+            this.remaining = remaining;
+        }
     }
 
     return exports();

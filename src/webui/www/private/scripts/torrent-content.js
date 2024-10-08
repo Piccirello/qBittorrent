@@ -485,6 +485,7 @@ window.qBittorrent.TorrentContent ??= (() => {
         const updateComplete = () => {
             // we've finished recursing
             updateGlobalCheckbox();
+            torrentFilesTable.recalculateRemaining();
             torrentFilesTable.updateTable(true);
         };
 
