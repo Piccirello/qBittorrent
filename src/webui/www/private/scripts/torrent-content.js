@@ -55,6 +55,7 @@ window.qBittorrent.TorrentContent ??= (() => {
     const TriState = window.qBittorrent.FileTree.TriState;
     let torrentFilesFilterInputTimer = -1;
     let onFilePriorityChanged;
+    let previousFilesData;
 
     const normalizePriority = function(priority) {
         priority = parseInt(priority, 10);
@@ -82,6 +83,13 @@ window.qBittorrent.TorrentContent ??= (() => {
             case FilePriority.Mixed:
                 return TriState.Partial;
         }
+    };
+
+    const normalizeProgress = function(progress) {
+        let p = (progress * 100).round(1);
+        if ((p === 100) && (progress < 1))
+            p = 99.9;
+        return p;
     };
 
     const isFolder = function(fileId) {
@@ -334,11 +342,29 @@ window.qBittorrent.TorrentContent ??= (() => {
     };
 
     const updateData = function(files) {
-        const rows = files.map((file, index) => {
-            let progress = (file.progress * 100).round(1);
-            if ((progress === 100) && (file.progress < 1))
-                progress = 99.9;
+        // only do work when data has changed
+        const currentFilesMap = torrentFilesTable.fileTree.serialize();
+        if (files.length === currentFilesMap.size) {
+            let isChanged = false;
+            for (let i = 0; i < files.length; ++i) {
+                const file = files[i];
+                const currentFile = currentFilesMap.get(file.index);
+                const isFilesEqual = (file.name === currentFile.path)
+                    && (file.size === currentFile.size)
+                    && (normalizeProgress(file.progress) === currentFile.progress)
+                    && (file.priority === currentFile.priority)
+                    && (file.availability === currentFile.availability);
+                if (!isFilesEqual) {
+                    isChanged = true;
+                    break;
+                }
+            }
 
+            if (!isChanged)
+                return;
+        }
+
+        const rows = files.map((file, index) => {
             const ignore = (file.priority === FilePriority.Ignored);
             const checked = (ignore ? TriState.Unchecked : TriState.Checked);
             const remaining = (ignore ? 0 : (file.size * (1.0 - file.progress)));
@@ -348,7 +374,7 @@ window.qBittorrent.TorrentContent ??= (() => {
                 fileName: file.name,
                 name: window.qBittorrent.Filesystem.fileName(file.name),
                 size: file.size,
-                progress: progress,
+                progress: normalizeProgress(file.progress),
                 priority: normalizePriority(file.priority),
                 remaining: remaining,
                 availability: file.availability

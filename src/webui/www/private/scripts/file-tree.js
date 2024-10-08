@@ -95,10 +95,20 @@ window.qBittorrent.FileTree ??= (() => {
          */
         toArray() {
             const nodes = [];
-            this.root.children.each((node) => {
-                this.#getArrayOfNodes(node, nodes);
-            });
+            if (this.root !== null) {
+                this.root.children.each((node) => {
+                    this.#getArrayOfNodes(node, nodes);
+                });
+            }
             return nodes;
+        }
+
+        serialize() {
+            const filesMap = new Map();
+            this.toArray().filter(node => !node.isFolder).forEach(node => {
+                filesMap.set(node.fileId, node.serialize());
+            });
+            return filesMap;
         }
 
         #getArrayOfNodes(node, array) {
@@ -124,6 +134,20 @@ window.qBittorrent.FileTree ??= (() => {
         root = null;
         isFolder = false;
         children = [];
+
+        serialize() {
+            return {
+                fileId: this.fileId,
+                checked: this.checked,
+                name: this.name,
+                path: this.path,
+                size: this.size,
+                progress: this.progress,
+                priority: this.priority,
+                remaining: this.remaining,
+                availability: this.availability
+            };
+        }
     };
 
     class FolderNode extends FileNode {
