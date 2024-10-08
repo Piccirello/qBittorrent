@@ -56,23 +56,24 @@ window.qBittorrent.FileTree ??= (() => {
     };
     Object.freeze(TriState);
 
-    const FileTree = new Class({
-        root: null,
-        nodeMap: {},
 
-        setRoot: function(root) {
+    class FileTree {
+        root = null;
+        nodeMap = {};
+
+        setRoot(root) {
             this.root = root;
             this.generateNodeMap(root);
 
             if (this.root.isFolder)
                 this.root.calculateSize();
-        },
+        }
 
-        getRoot: function() {
+        getRoot() {
             return this.root;
-        },
+        }
 
-        generateNodeMap: function(node) {
+        generateNodeMap(node) {
             // don't store root node in map
             if (node.root !== null)
                 this.nodeMap[node.rowId] = node;
@@ -80,75 +81,71 @@ window.qBittorrent.FileTree ??= (() => {
             node.children.each((child) => {
                 this.generateNodeMap(child);
             });
-        },
+        }
 
-        getNode: function(rowId) {
+        getNode(rowId) {
             return (this.nodeMap[rowId] === undefined)
                 ? null
                 : this.nodeMap[rowId];
-        },
+        }
 
-        getRowId: (node) => {
+        getRowId(node) {
             return node.rowId;
-        },
+        }
 
         /**
          * Returns the nodes in dfs order
          */
-        toArray: function() {
+        toArray() {
             const nodes = [];
             this.root.children.each((node) => {
-                this._getArrayOfNodes(node, nodes);
+                this.#getArrayOfNodes(node, nodes);
             });
             return nodes;
-        },
+        }
 
-        _getArrayOfNodes: function(node, array) {
+        #getArrayOfNodes(node, array) {
             array.push(node);
             node.children.each((child) => {
-                this._getArrayOfNodes(child, array);
+                this.#getArrayOfNodes(child, array);
             });
         }
-    });
+    };
 
-    const FileNode = new Class({
-        name: "",
-        path: "",
-        rowId: null,
-        fileId: null,
-        size: 0,
-        checked: TriState.Unchecked,
-        remaining: 0,
-        progress: 0,
-        priority: FilePriority.Normal,
-        availability: 0,
-        depth: 0,
-        root: null,
-        isFolder: false,
-        children: [],
-    });
+    class FileNode {
+        name = "";
+        path = "";
+        rowId = null;
+        fileId = null;
+        size = 0;
+        checked = TriState.Unchecked;
+        remaining = 0;
+        progress = 0;
+        priority = FilePriority.Normal;
+        availability = 0;
+        depth = 0;
+        root = null;
+        isFolder = false;
+        children = [];
+    };
 
-    const FolderNode = new Class({
-        Extends: FileNode,
+    class FolderNode extends FileNode {
+        isFolder = true;
+        fileId = -1;
 
         /**
          * Will automatically tick the checkbox for a folder if all subfolders and files are also ticked
          */
-        autoCheckFolders: true,
-
-        initialize: function() {
-            this.isFolder = true;
-            this.fileId = -1;
-        },
+        autoCheckFolders = true;
 
         addChild(node) {
             this.children.push(node);
-        },
+        }
 
         /**
          * Recursively calculate size of node and its children
          */
-        calculateSize: function() {
+        calculateSize() {
             let size = 0;
             let remaining = 0;
             let progress = 0;
@@ -191,7 +188,7 @@ window.qBittorrent.FileTree ??= (() => {
             this.priority = priority;
             this.availability = (availability / size);
         }
-    });
+    }
 
     return exports();
 })();
