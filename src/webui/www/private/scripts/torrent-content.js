@@ -508,12 +508,29 @@ window.qBittorrent.TorrentContent ??= (() => {
             updateParentFolder(id);
     };
 
+    /**
+     * Allows for updating a subset of the table's columns, rather than all columns
+     */
+    const updateTableColumns = function(columns) {
+        const columnsSet = new Set(columns);
+        const trs = torrentFilesTable.tableBody.querySelectorAll("tr");
+        for (const tr of trs) {
+            const row = torrentFilesTable.rows.get(tr.dataset.rowId);
+            const tds = tr.querySelectorAll("td");
+            for (let i = 0; i < torrentFilesTable.columns.length; ++i) {
+                const column = torrentFilesTable.columns[i];
+                if (columnsSet.has(column.dataProperties[0]))
+                    column.updateTd(tds[i], row);
+            }
+        }
+    };
+
     const updateParentFolder = function(id) {
         const updateComplete = function() {
             // we've finished recursing
             updateGlobalCheckbox();
             torrentFilesTable.recalculateRemaining();
-            torrentFilesTable.updateTable(true);
+            updateTableColumns(["checked", "priority", "remaining"]);
         };
 
         const node = torrentFilesTable.getNode(id);
