@@ -70,9 +70,7 @@ window.qBittorrent.FileTree ??= (() => {
         constructor(root) {
             this.root = root;
             this.generateNodeMap(root);
-
-            if (this.root.isFolder)
-                this.root.calculateSize();
+            this.calculateSize();
         }
 
         static CompareTrees(rootA, rootB) {
@@ -111,7 +109,7 @@ window.qBittorrent.FileTree ??= (() => {
             }
 
             if (nodeA.isFolder) {
-                // sort child nodes in the same order
+                // children must be in the same order for comparison
                 nodeA.children.sort((node1, node2) => node1.path.localeCompare(node2.path));
                 nodeB.children.sort((node1, node2) => node1.path.localeCompare(node2.path));
 
@@ -163,7 +161,7 @@ window.qBittorrent.FileTree ??= (() => {
         }
 
         calculateSize() {
-            this.root.children.forEach(child => child.calculateSize());
+            this.root.calculateSize();
         }
 
         /**
@@ -216,7 +214,16 @@ window.qBittorrent.FileTree ??= (() => {
         /** @type (FileNode | FolderNode)[] */
         children = [];
 
-        calculateSize() {}
+        isIgnored() {
+            return this.priority === FilePriority.Ignored;
+        }
+
+        calculateSize() {
+            if (this.isIgnored())
+                this.remaining = 0;
+            else
+                this.remaining = (this.size * (1.0 - (this.progress / 100)));
+        }
 
         serialize() {
             return {
@@ -255,9 +262,9 @@ window.qBittorrent.FileTree ??= (() => {
         fileId = -1;
 
         /**
-         * Will automatically tick the checkbox for a folder if all subfolders and files are also ticked
+         * When true, the folder's `checked` state will be calculately automatically based on its children
          */
-        autoCheckFolders = true;
+        autoCalculateCheckedState = true;
 
         /**
          * @param {FileNode|FolderNode} node
@@ -280,8 +287,7 @@ window.qBittorrent.FileTree ??= (() => {
             let isFirstFile = true;
 
             this.children.forEach((node) => {
-                if (node.isFolder)
-                    node.calculateSize();
+                node.calculateSize();
 
                 size += node.size;
 
@@ -297,8 +303,7 @@ window.qBittorrent.FileTree ??= (() => {
                         checked = TriState.Partial;
                 }
 
-                const isIgnored = (node.priority === FilePriority.Ignored);
-                if (!isIgnored) {
+                if (!node.isIgnored()) {
                     remaining += node.remaining;
                     progress += (node.progress * node.size);
                     availability += (node.availability * node.size);
@@ -307,7 +312,7 @@ window.qBittorrent.FileTree ??= (() => {
 
             this.size = size;
             this.remaining = remaining;
-            this.checked = this.autoCheckFolders ? checked : TriState.Checked;
+            this.checked = this.autoCalculateCheckedState ? checked : TriState.Checked;
             this.progress = (progress / size);
             this.priority = priority;
             this.availability = (availability / size);
