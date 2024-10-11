@@ -823,6 +823,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         updateTable(fullUpdate = false) {
             const rows = this.getFilteredAndSortedRows();
 
+            // remove rows from the selection if they're no longer going to be displayed
             for (let i = 0; i < this.selectedRows.length; ++i) {
                 if (!(this.selectedRows[i] in rows)) {
                     this.selectedRows.splice(i, 1);
@@ -838,12 +839,13 @@ window.qBittorrent.DynamicTable ??= (() => {
                 for (let j = rowPos; j < trs.length; ++j) {
                     if (trs[j]["rowId"] === rowId) {
                         tr_found = true;
-                        if (rowPos === j)
-                            break;
-                        trs[j].inject(trs[rowPos], "before");
-                        const tmpTr = trs[j];
-                        trs.splice(j, 1);
-                        trs.splice(rowPos, 0, tmpTr);
+                        // move row into correct location
+                        if (rowPos !== j) {
+                            trs[j].inject(trs[rowPos], "before");
+                            const tmpTr = trs[j];
+                            trs.splice(j, 1);
+                            trs.splice(rowPos, 0, tmpTr);
+                        }
                         break;
                     }
                 }
@@ -2043,6 +2045,7 @@ window.qBittorrent.DynamicTable ??= (() => {
     }
 
     class TorrentFilesTable extends DynamicTable {
+        #IdentifierColumn = "name";
         filterTerms = [];
         prevFilterTerms = [];
         prevRowsString = null;
@@ -2050,29 +2053,25 @@ window.qBittorrent.DynamicTable ??= (() => {
         prevSortedColumn = null;
         prevReverseSort = null;
         fileTree = null;
+        fileTreeRootSnapshot = null;
 
-        constructor() {
-            super();
-            this.fileTree = new window.qBittorrent.FileTree.FileTree();
-        }
-
-        populateTable(root) {
-            this.fileTree.setRoot(root);
+        populateTable(fileTree) {
+            this.fileTree = fileTree;
+            const root = fileTree.getRoot();
             root.children.each((node) => {
-                this._addNodeToTable(node, 0, root);
+                this.#addNodeToTable(node, 0);
             });
+
+            this.updateTable(true);
         }
 
-        _addNodeToTable(node, depth, parent) {
-            node.depth = depth;
-            node.parent = parent;
-
+        #addNodeToTable(node, depth) {
             this.updateRowData({
                 rowId: node.rowId,
             });
 
             node.children.each((child) => {
-                this._addNodeToTable(child, depth + 1, node);
+                this.#addNodeToTable(child, depth + 1);
             });
         }
 
@@ -2089,19 +2088,57 @@ window.qBittorrent.DynamicTable ??= (() => {
             return this.rows.get(rowId);
         }
 
-        updateRow(tr, fullUpdate) {
-            const row = this.rows.get(tr.rowId);
-            const node = this.getNode(tr.rowId);
+        /**
+         * Re-render the table's cells (rows & columns)
+         * @param {boolean} fullUpdate whether all cells should be re-rendered. when false, only values in the diff map will be re-rendered.
+         * @param {Map|null} diffMap the diff of changes made to the file tree since the last render. when null, diff is computed automatically.
+         */
+        updateTable(fullUpdate = false, diffMap = null) {
+            if (fullUpdate)
+                this.fileTreeRootSnapshot = null;
 
-            const tds = tr.getElements("td");
-            for (let i = 0; i < this.columns.length; ++i) {
-                if (Object.hasOwn(node, this.columns[i].dataProperties[0]))
-                    this.columns[i].updateTd(tds[i], row);
+            if (this.fileTreeRootSnapshot !== null) {
+                if (diffMap === null)
+                    diffMap = window.qBittorrent.FileTree.FileTree.CompareTrees(this.fileTree.root, this.fileTreeRootSnapshot);
+
+                for (const [rowId, changedColumns] of diffMap.entries()) {
+                    const row = this.rows.get(rowId);
+                    for (const column of changedColumns)
+                        // we need to set _some_ value so updateRow() knows to re-render it.
+                        // but what value we set doesn't matter - the value to render will be read from the file tree node
+                        row.data[column] = true;
+                }
+            }
+
+            super.updateTable(fullUpdate);
+
+            this.fileTreeRootSnapshot = this.fileTree.clone();
+
+            // clear stale data from any rows that weren't rendered
+            for (const row of this.rows.values()) {
+                row.data = {};
             }
         }
 
-        recalculateRemaining() {
-            this.fileTree.getRoot().recalculateRemaining();
+        clear() {
+            this.fileTree?.clear();
+            this.fileTree = null;
+            this.fileTreeRootSnapshot = null;
+            super.clear();
+        }
+
+        updateRow(tr, fullUpdate) {
+            const row = this.rows.get(tr.rowId);
+            const node = this.getNode(tr.rowId);
+            const data = fullUpdate ? node : row.data;
+
+            const tds = tr.getElements("td");
+            for (let i = 0; i < this.columns.length; ++i) {
+                if (Object.hasOwn(data, this.columns[i].dataProperties[0])) {
+                    this.columns[i].updateTd(tds[i], row);
+                }
+            }
+            row.data = {};
         }
 
         initColumns() {
@@ -2260,7 +2297,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         _sortNodesByColumn(nodes, column) {
             nodes.sort((node1, node2) => {
                 // list folders before files when sorting by name
-                if (column.name === "name") {
+                if (column.name === this.#IdentifierColumn) {
                     if (node1.isFolder && !node2.isFolder)
                         return -1;
                     if (node2.isFolder && !node1.isFolder)
@@ -2291,7 +2328,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
             }
 
-            if (window.qBittorrent.Misc.containsAllTerms(node.name, filterTerms)) {
+            if (window.qBittorrent.Misc.containsAllTerms(node[this.#IdentifierColumn], filterTerms)) {
                 const row = this.getRow(node);
                 filteredRows.push(row);
                 return true;
@@ -2403,23 +2440,16 @@ window.qBittorrent.DynamicTable ??= (() => {
         prevSortedColumn = null;
         prevReverseSort = null;
         fileTree = null;
-
-        constructor() {
-            super();
-            this.fileTree = new window.qBittorrent.FileTree.FileTree();
-        }
+        fileTreeRootSnapshot = null;
 
         populateTable(root) {
-            this.fileTree.setRoot(root);
+            this.fileTree = new window.qBittorrent.FileTree.FileTree(root);
             root.children.each((node) => {
                 this._addNodeToTable(node, 0, root);
             });
         }
 
         _addNodeToTable(node, depth, parent) {
-            node.depth = depth;
-            node.parent = parent;
-
             if (node.isFolder) {
                 const data = {
                     rowId: node.rowId,
