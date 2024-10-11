@@ -692,6 +692,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         updateTable(fullUpdate = false) {
             const rows = this.getFilteredAndSortedRows();
 
+            // remove rows from the selection if they're no longer going to be displayed
             for (let i = 0; i < this.selectedRows.length; ++i) {
                 if (!(this.selectedRows[i] in rows)) {
                     this.selectedRows.splice(i, 1);
@@ -707,12 +708,13 @@ window.qBittorrent.DynamicTable ??= (() => {
                 for (let j = rowPos; j < trs.length; ++j) {
                     if (trs[j]["rowId"] === rowId) {
                         tr_found = true;
-                        if (rowPos === j)
-                            break;
-                        trs[j].inject(trs[rowPos], "before");
-                        const tmpTr = trs[j];
-                        trs.splice(j, 1);
-                        trs.splice(rowPos, 0, tmpTr);
+                        // move row into correct location
+                        if (rowPos !== j) {
+                            trs[j].inject(trs[rowPos], "before");
+                            const tmpTr = trs[j];
+                            trs.splice(j, 1);
+                            trs.splice(rowPos, 0, tmpTr);
+                        }
                         break;
                     }
                 }
@@ -1892,6 +1894,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
 
     class TorrentFilesTable extends DynamicTable {
+        #IdentifierColumn = "name";
         filterTerms = [];
         prevFilterTerms = [];
         prevRowsString = null;
@@ -1900,28 +1903,23 @@ window.qBittorrent.DynamicTable ??= (() => {
         prevReverseSort = null;
         fileTree = null;
 
-        constructor() {
-            super();
-            this.fileTree = new window.qBittorrent.FileTree.FileTree();
-        }
-
-        populateTable(root) {
-            this.fileTree.setRoot(root);
+        populateTable(fileTree) {
+            this.fileTree = fileTree;
+            const root = fileTree.getRoot();
             root.children.each((node) => {
-                this._addNodeToTable(node, 0, root);
+                this.#addNodeToTable(node, 0);
             });
+
+            this.updateTable(true);
         }
 
-        _addNodeToTable(node, depth, parent) {
-            node.depth = depth;
-            node.parent = parent;
-
+        #addNodeToTable(node, depth) {
             this.updateRowData({
                 rowId: node.rowId,
             });
 
             node.children.each((child) => {
-                this._addNodeToTable(child, depth + 1, node);
+                this.#addNodeToTable(child, depth + 1);
             });
         }
 
@@ -1938,7 +1936,84 @@ window.qBittorrent.DynamicTable ??= (() => {
             return this.rows.get(rowId);
         }
 
-        updateRow(tr, fullUpdate) {
+        /**
+         * Re-render the table's cells (rows & columns)
+         * @param {boolean} fullUpdate whether all cells should be re-rendered. when false, only values in the diff map will be re-rendered.
+         * @param {Map|null} diffMap the diff of changes made to the file tree since the last render. when null, diff is computed automatically.
+         */
+        updateTable(fullUpdate = false, diffMap = null) {
+            // NOTE: this function does not currently support efficiently adding new rows after the initial populateTable.
+            // if you need to add additional rows to the table, you must perform a full re-render by specifying `fullUpdate` as `true`
+
+            if (fullUpdate) {
+                super.updateTable(true);
+                this.fileTreeRootSnapshot = this.fileTree.clone();
+                return;
+            }
+
+            if (diffMap === null)
+                diffMap = window.qBittorrent.FileTree.FileTree.CompareTrees(this.fileTree.root, this.fileTreeRootSnapshot);
+
+            if (diffMap.size > 0) {
+                // make trs efficient to access for this process
+                const trMap = new Map();
+                for (const tr of this.tableBody.querySelectorAll("tr"))
+                    trMap.set(tr.rowId, tr);
+
+                for (const [rowId, changedColumns] of diffMap.entries()) {
+                    const row = this.rows.get(rowId);
+                    const tds = trMap.get(rowId).querySelectorAll("td");
+
+                    // `columns`'s length is guaranteed to be >= `changedColumns`, so iterate over `columns` first
+                    for (let i = 0; i < this.columns.length; ++i) {
+                        const column = this.columns[i];
+                        if (changedColumns.includes(column.dataProperties[0]))
+                            column.updateTd(tds[i], row);
+                    }
+                }
+
+                // save new snapshot
+                this.fileTreeRootSnapshot = this.fileTree.clone();
+            }
+
+            // sort rows into appropriate order
+            const rows = this.getFilteredAndSortedRows();
+            const trs = this.tableBody.getElements("tr");
+            for (let expectedPosition = 0; expectedPosition < rows.length; ++expectedPosition) {
+                const rowId = rows[expectedPosition]["rowId"];
+                let actualPosition = -1;
+                for (let i = expectedPosition; i < trs.length; ++i) {
+                    if (trs[i]["rowId"] === rowId) {
+                        actualPosition = i;
+                        break;
+                    }
+                }
+
+                if (actualPosition === -1) {
+                    console.log("error: performing full table re-render");
+                    this.updateTable(true);
+                    return;
+                }
+
+                // move row into correct location
+                if (expectedPosition !== actualPosition) {
+                    trs[actualPosition].inject(trs[expectedPosition], "before");
+                    const tmpTr = trs[actualPosition];
+                    trs.splice(actualPosition, 1);
+                    trs.splice(expectedPosition, 0, tmpTr);
+                }
+            }
+        }
+
+        clear() {
+            this.fileTree?.clear();
+            super.clear();
+        }
+
+        /**
+         * Re-render every column in the row
+         */
+        updateRow(tr) {
             const row = this.rows.get(tr.rowId);
             const node = this.getNode(tr.rowId);
 
@@ -1947,10 +2022,6 @@ window.qBittorrent.DynamicTable ??= (() => {
                 if (Object.hasOwn(node, this.columns[i].dataProperties[0]))
                     this.columns[i].updateTd(tds[i], row);
             }
-        }
-
-        recalculateRemaining() {
-            this.fileTree.getRoot().recalculateRemaining();
         }
 
         initColumns() {
@@ -2110,7 +2181,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         _sortNodesByColumn(nodes, column) {
             nodes.sort((node1, node2) => {
                 // list folders before files when sorting by name
-                if (column.name === "name") {
+                if (column.name === this.#IdentifierColumn) {
                     if (node1.isFolder && !node2.isFolder)
                         return -1;
                     if (node2.isFolder && !node1.isFolder)
@@ -2141,7 +2212,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
             }
 
-            if (window.qBittorrent.Misc.containsAllTerms(node.name, filterTerms)) {
+            if (window.qBittorrent.Misc.containsAllTerms(node[this.#IdentifierColumn], filterTerms)) {
                 const row = this.getRow(node);
                 filteredRows.push(row);
                 return true;
@@ -2247,22 +2318,14 @@ window.qBittorrent.DynamicTable ??= (() => {
         prevReverseSort = null;
         fileTree = null;
 
-        constructor() {
-            super();
-            this.fileTree = new window.qBittorrent.FileTree.FileTree();
-        }
-
         populateTable(root) {
-            this.fileTree.setRoot(root);
+            this.fileTree = new window.qBittorrent.FileTree.FileTree(root);
             root.children.each((node) => {
                 this._addNodeToTable(node, 0, root);
             });
         }
 
         _addNodeToTable(node, depth, parent) {
-            node.depth = depth;
-            node.parent = parent;
-
             if (node.isFolder) {
                 const data = {
                     rowId: node.rowId,
