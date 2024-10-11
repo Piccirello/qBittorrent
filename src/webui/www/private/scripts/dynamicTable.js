@@ -2403,14 +2403,6 @@ window.qBittorrent.DynamicTable ??= (() => {
             return filteredRows;
         }
 
-        setIgnored(rowId, ignore) {
-            const node = this.getNode(rowId.toString());
-            if (ignore)
-                node.remaining = 0;
-            else
-                node.remaining = (node.size * (1.0 - (node.progress / 100)));
-        }
-
         setupCommonEvents() {
             super.setupCommonEvents();
             this.dynamicTableDiv.addEventListener("keydown", (e) => {
@@ -2803,14 +2795,6 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.prevSortedColumn = this.sortedColumn;
             this.prevReverseSort = this.reverseSort;
             return filteredRows;
-        }
-
-        setIgnored(rowId, ignore) {
-            const row = this.rows.get(rowId);
-            if (ignore)
-                row.full_data.remaining = 0;
-            else
-                row.full_data.remaining = (row.full_data.size * (1.0 - (row.full_data.progress / 100)));
         }
 
         setupCommonEvents() {}
