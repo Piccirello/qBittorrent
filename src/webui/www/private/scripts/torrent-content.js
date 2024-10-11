@@ -299,11 +299,8 @@ window.qBittorrent.TorrentContent ??= (() => {
             onFilePriorityChanged(fileIds, priority);
         }
 
-        const ignore = (priority === FilePriority.Ignored);
         ids.forEach((_id) => {
             _id = _id.toString();
-            torrentFilesTable.setIgnored(_id, ignore);
-
             const node = torrentFilesTable.getNode(_id);
             node.priority = priority;
             node.checked = triStateFromPriority(priority);
@@ -314,7 +311,6 @@ window.qBittorrent.TorrentContent ??= (() => {
         return files.map((file, index) => {
             const ignore = (file.priority === FilePriority.Ignored);
             const checked = (ignore ? TriState.Unchecked : TriState.Checked);
-            const remaining = (ignore ? 0 : (file.size * (1.0 - file.progress)));
             return {
                 fileId: index,
                 checked: checked,
@@ -323,7 +319,6 @@ window.qBittorrent.TorrentContent ??= (() => {
                 size: file.size,
                 progress: normalizeProgress(file.progress),
                 priority: normalizePriority(file.priority),
-                remaining: remaining,
                 availability: file.availability
             };
         });
@@ -415,7 +410,6 @@ window.qBittorrent.TorrentContent ??= (() => {
             });
 
             const isChecked = file.checked ? TriState.Checked : TriState.Unchecked;
-            const remaining = (file.priority === FilePriority.Ignored) ? 0 : file.remaining;
             const childNode = new window.qBittorrent.FileTree.FileNode();
             childNode.name = file.name;
             childNode.path = file.fileName;
@@ -423,7 +417,6 @@ window.qBittorrent.TorrentContent ??= (() => {
             childNode.fileId = file.fileId;
             childNode.size = file.size;
             childNode.checked = isChecked;
-            childNode.remaining = remaining;
             childNode.progress = file.progress;
             childNode.priority = file.priority;
             childNode.availability = file.availability;
