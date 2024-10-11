@@ -34,6 +34,7 @@ window.qBittorrent.FileTree ??= (() => {
         return {
             FilePriority: FilePriority,
             TriState: TriState,
+            IncompatibleDiffError: IncompatibleDiffError,
             FileTree: FileTree,
             FileNode: FileNode,
             FolderNode: FolderNode,
@@ -56,16 +57,87 @@ window.qBittorrent.FileTree ??= (() => {
     };
     Object.freeze(TriState);
 
+    class IncompatibleDiffError extends Error {}
+
     class FileTree {
+        /** @type FileNode|FolderNode|null */
         root = null;
         #nodeMap = new Map();
 
-        setRoot(root) {
+        /**
+         * @param {FileNode|FolderNode} root
+         */
+        constructor(root) {
             this.root = root;
             this.generateNodeMap(root);
 
             if (this.root.isFolder)
                 this.root.calculateSize();
+        }
+
+        static CompareTrees(rootA, rootB) {
+            const diffMap = new Map();
+            this.#CompareNode(rootA, rootB, diffMap);
+            return diffMap;
+        }
+
+        static #CompareNode(nodeA, nodeB, diffMap) {
+            if ((nodeA === null) || (nodeB === null))
+                throw new IncompatibleDiffError(`node cannot be null`);
+            if (nodeA.rowId !== nodeB.rowId)
+                throw new IncompatibleDiffError(`Row ids ${nodeA.rowId} and ${nodeB.rowId} do not match`);
+            if ((nodeA.root === null) !== (nodeB.root === null))
+                throw new IncompatibleDiffError(`Row id ${nodeA.rowId} is root in one tree but not other`);
+            if (nodeA.fileId !== nodeB.fileId)
+                throw new IncompatibleDiffError(`Row id ${nodeA.rowId} does not have same file id in both trees`);
+            if (nodeA.isFolder !== nodeB.isFolder)
+                throw new IncompatibleDiffError(`Row id ${nodeA.rowId} is folder in one tree but not the other`);
+            if (nodeA.depth !== nodeB.depth)
+                throw new IncompatibleDiffError(`Row id ${nodeA.rowId} does not have same depth in both trees`);
+            if (nodeA.children.length !== nodeB.children.length)
+                throw new IncompatibleDiffError(`Row id ${nodeA.rowId} does not have same number of children in both trees`);
+
+            const isRoot = nodeA.root === null;
+            if (!isRoot) {
+                const nodeASerialized = nodeA.serialize();
+                const nodeBSerialized = nodeB.serialize();
+                const changedColumns = [];
+                Object.entries(nodeASerialized).forEach(([key, value]) => {
+                    if (value !== nodeBSerialized[key])
+                        changedColumns.push(key);
+                });
+                if (changedColumns.length > 0)
+                    diffMap.set(nodeA.rowId, changedColumns);
+            }
+
+            if (nodeA.isFolder) {
+                // sort child nodes in the same order
+                nodeA.children.sort((node1, node2) => node1.path.localeCompare(node2.path));
+                nodeB.children.sort((node1, node2) => node1.path.localeCompare(node2.path));
+
+                for (let i = 0; i < nodeA.children.length; ++i) {
+                    const childNodeA = nodeA.children[i];
+                    const childNodeB = nodeB.children[i];
+                    this.#CompareNode(childNodeA, childNodeB, diffMap);
+                }
+            }
+
+        }
+
+        clear() {
+            this.root = null;
+            this.#nodeMap.clear();
+        }
+
+        clone() {
+            const setRoot = (node, root) => {
+                node.root = root;
+                node.children.forEach(child => setRoot(child, root));
+            };
+
+            const newRoot = this.root.clone();
+            newRoot.children.forEach(child => setRoot(child, newRoot));
+            return newRoot;
         }
 
         getRoot() {
@@ -83,11 +155,15 @@ window.qBittorrent.FileTree ??= (() => {
         }
 
         getNode(rowId) {
-            return this.#nodeMap.get(Number.parseInt(rowId, 10)) ?? null;
+            return this.#nodeMap.get(rowId) ?? null;
         }
 
         getRowId(node) {
             return node.rowId;
+        }
+
+        calculateSize() {
+            this.root.children.forEach(child => child.calculateSize());
         }
 
         /**
@@ -95,10 +171,20 @@ window.qBittorrent.FileTree ??= (() => {
          */
         toArray() {
             const nodes = [];
-            this.root.children.each((node) => {
-                this.#getArrayOfNodes(node, nodes);
-            });
+            if (this.root !== null) {
+                this.root.children.forEach((node) => {
+                    this.#getArrayOfNodes(node, nodes);
+                });
+            }
             return nodes;
+        }
+
+        serialize() {
+            const filesMap = new Map();
+            this.toArray().filter(node => !node.isFolder).forEach(node => {
+                filesMap.set(node.fileId, node.serialize());
+            });
+            return filesMap;
         }
 
         #getArrayOfNodes(node, array) {
@@ -110,10 +196,14 @@ window.qBittorrent.FileTree ??= (() => {
     };
 
     class FileNode {
+        rowId = null;
+        /** @type number|null */
+        fileId = null;
+        /** @type FileNode|FolderNode|null */
+        root = null;
+
         name = "";
         path = "";
-        rowId = null;
-        fileId = null;
         size = 0;
         checked = TriState.Unchecked;
         remaining = 0;
@@ -121,9 +211,43 @@ window.qBittorrent.FileTree ??= (() => {
         priority = FilePriority.Normal;
         availability = 0;
         depth = 0;
-        root = null;
+
         isFolder = false;
+        /** @type (FileNode | FolderNode)[] */
         children = [];
+
+        calculateSize() {}
+
+        serialize() {
+            return {
+                fileId: this.fileId,
+                checked: this.checked,
+                name: this.name,
+                path: this.path,
+                size: this.size,
+                progress: this.progress,
+                priority: this.priority,
+                remaining: this.remaining,
+                availability: this.availability
+            };
+        }
+
+        clone() {
+            const newNode = new FileNode();
+            newNode.rowId = this.rowId;
+            newNode.fileId = this.fileId;
+            newNode.isFolder = this.isFolder;
+            newNode.depth = this.depth;
+            newNode.name = this.name;
+            newNode.path = this.path;
+            newNode.size = this.size;
+            newNode.checked = this.checked;
+            newNode.remaining = this.remaining;
+            newNode.progress = this.progress;
+            newNode.priority = this.priority;
+            newNode.availability = this.availability;
+            return newNode;
+        }
     };
 
     class FolderNode extends FileNode {
@@ -135,6 +259,9 @@ window.qBittorrent.FileTree ??= (() => {
          */
         autoCheckFolders = true;
 
+        /**
+         * @param {FileNode|FolderNode} node
+         */
         addChild(node) {
             this.children.push(node);
         }
@@ -152,7 +279,7 @@ window.qBittorrent.FileTree ??= (() => {
 
             let isFirstFile = true;
 
-            this.children.each((node) => {
+            this.children.forEach((node) => {
                 if (node.isFolder)
                     node.calculateSize();
 
@@ -186,23 +313,10 @@ window.qBittorrent.FileTree ??= (() => {
             this.availability = (availability / size);
         }
 
-        /**
-         * Recursively realculate the amount of data remaining to be downloaded.
-         * This is useful for updating folders' "remaining" size files are unchecked/ignored.
-         */
-        recalculateRemaining() {
-            let remaining = 0;
-
-            this.children.each((node) => {
-                if (node.isFolder)
-                    node.recalculateRemaining();
-
-                const isIgnored = (node.priority === FilePriority.Ignored);
-                if (!isIgnored)
-                    remaining += node.remaining;
-            });
-
-            this.remaining = remaining;
+        clone() {
+            const newNode = super.clone();
+            newNode.children = this.children.map(child => child.clone());
+            return newNode;
         }
     }
 
