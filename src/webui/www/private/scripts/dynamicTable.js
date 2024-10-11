@@ -769,6 +769,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         updateTable(fullUpdate = false) {
             const rows = this.getFilteredAndSortedRows();
 
+            // remove rows from the selection if they're no longer going to be displayed
             for (let i = 0; i < this.selectedRows.length; ++i) {
                 if (!(this.selectedRows[i] in rows)) {
                     this.selectedRows.splice(i, 1);
@@ -784,12 +785,13 @@ window.qBittorrent.DynamicTable ??= (() => {
                 for (let j = rowPos; j < trs.length; ++j) {
                     if (trs[j]["rowId"] === rowId) {
                         tr_found = true;
-                        if (rowPos === j)
-                            break;
-                        trs[j].inject(trs[rowPos], "before");
-                        const tmpTr = trs[j];
-                        trs.splice(j, 1);
-                        trs.splice(rowPos, 0, tmpTr);
+                        // move row into correct location
+                        if (rowPos !== j) {
+                            trs[j].inject(trs[rowPos], "before");
+                            const tmpTr = trs[j];
+                            trs.splice(j, 1);
+                            trs.splice(rowPos, 0, tmpTr);
+                        }
                         break;
                     }
                 }
@@ -2005,6 +2007,9 @@ window.qBittorrent.DynamicTable ??= (() => {
          * @param {Map|null} diffMap the diff of changes made to the file tree since the last render. when null, diff is computed automatically.
          */
         updateTable(fullUpdate = false, diffMap = null) {
+            // NOTE: this function does not currently support efficiently adding new rows after the initial populateTable.
+            // if you need to add additional rows to the table, you must perform a full re-render by specifying `fullUpdate` as `true`
+
             if (fullUpdate) {
                 super.updateTable(true);
                 this.fileTreeRootSnapshot = this.fileTree.clone();
@@ -2013,7 +2018,6 @@ window.qBittorrent.DynamicTable ??= (() => {
 
             if (diffMap === null)
                 diffMap = window.qBittorrent.FileTree.FileTree.CompareTrees(this.fileTree.root, this.fileTreeRootSnapshot);
-
 
             if (diffMap.size > 0) {
                 // make trs efficient to access for this process
@@ -2033,7 +2037,36 @@ window.qBittorrent.DynamicTable ??= (() => {
                     }
                 }
 
+                // save new snapshot
                 this.fileTreeRootSnapshot = this.fileTree.clone();
+            }
+
+            // sort rows into appropriate order
+            const rows = this.getFilteredAndSortedRows();
+            const trs = this.tableBody.getElements("tr");
+            for (let expectedPosition = 0; expectedPosition < rows.length; ++expectedPosition) {
+                const rowId = rows[expectedPosition]["rowId"];
+                let actualPosition = -1;
+                for (let i = expectedPosition; i < trs.length; ++i) {
+                    if (trs[i]["rowId"] === rowId) {
+                        actualPosition = i;
+                        break;
+                    }
+                }
+
+                if (actualPosition === -1) {
+                    console.log("error: performing full table re-render");
+                    this.updateTable(true);
+                    return;
+                }
+
+                // move row into correct location
+                if (expectedPosition !== actualPosition) {
+                    trs[actualPosition].inject(trs[expectedPosition], "before");
+                    const tmpTr = trs[actualPosition];
+                    trs.splice(actualPosition, 1);
+                    trs.splice(expectedPosition, 0, tmpTr);
+                }
             }
         }
 
