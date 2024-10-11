@@ -2460,12 +2460,12 @@ window.qBittorrent.DynamicTable ??= (() => {
                     renamed: node.renamed
                 };
 
-                node.full_data = data;
+                node.data = data;
                 this.updateRowData(data);
             }
             else {
-                node.full_data.rowId = node.rowId;
-                this.updateRowData(node.full_data);
+                node.data.rowId = node.rowId;
+                this.updateRowData(node.data);
             }
 
             node.children.each((child) => {
@@ -2520,7 +2520,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                     cb.indeterminate = false;
                     cb.state = "checked";
                     node.checked = 0;
-                    node.full_data.checked = node.checked;
+                    node.data.checked = node.checked;
                 }
                 else {
                     const cb = checkboxes[i];
@@ -2528,7 +2528,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                     cb.indeterminate = false;
                     cb.state = "unchecked";
                     node.checked = 1;
-                    node.full_data.checked = node.checked;
+                    node.data.checked = node.checked;
                 }
             }
 
@@ -2538,7 +2538,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         toggleNodeTreeCheckbox(rowId, checkState) {
             const node = this.getNode(rowId);
             node.checked = checkState;
-            node.full_data.checked = checkState;
+            node.data.checked = checkState;
             const checkbox = $(`cbRename${rowId}`);
             checkbox.checked = node.checked === 0;
             checkbox.state = checkbox.checked ? "checked" : "unchecked";
@@ -2601,7 +2601,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 checkbox.addEventListener("click", (e) => {
                     const node = that.getNode(id);
                     node.checked = e.target.checked ? 0 : 1;
-                    node.full_data.checked = node.checked;
+                    node.data.checked = node.checked;
                     that.updateGlobalCheckbox();
                     that.onRowSelectionChange(node);
                     e.stopPropagation();
@@ -2662,6 +2662,13 @@ window.qBittorrent.DynamicTable ??= (() => {
                 span.id = fileNameRenamedId;
                 td.replaceChildren(span);
             };
+
+            for (const column of this.columns) {
+                column["getRowValue"] = function(row, pos = 0) {
+                    const node = that.getNode(row.rowId);
+                    return node[this.dataProperties[pos]];
+                };
+            }
         }
 
         onRowSelectionChange(row) {}
@@ -2677,7 +2684,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 if (rowIds.includes(tr.rowId)) {
                     const node = that.getNode(tr.rowId);
                     node.checked = 0;
-                    node.full_data.checked = 0;
+                    node.data.checked = 0;
 
                     const checkbox = tr.children[0].getElement("input");
                     checkbox.state = "checked";
