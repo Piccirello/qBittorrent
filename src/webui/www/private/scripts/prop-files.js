@@ -84,11 +84,12 @@ window.qBittorrent.PropFiles ??= (() => {
             url: url,
             method: "get",
             noCache: true,
-            onComplete: function() {
-                clearTimeout(loadTorrentFilesDataTimer);
-                loadTorrentFilesDataTimer = loadTorrentFilesData.delay(5000);
-            },
             onSuccess: function(files) {
+                clearTimeout(loadTorrentFilesDataTimer);
+                // refresh large torrents less frequently for improved browser performance
+                const delay = files.length < 1000 ? 10000 : 30000;
+                loadTorrentFilesDataTimer = loadTorrentFilesData.delay(delay);
+
                 window.qBittorrent.TorrentContent.clearFilterInputTimer();
 
                 if (files.length === 0) {
@@ -99,6 +100,10 @@ window.qBittorrent.PropFiles ??= (() => {
                     if (loadedNewTorrent)
                         window.qBittorrent.TorrentContent.collapseAllFolders();
                 }
+            },
+            onFailure: function() {
+                clearTimeout(loadTorrentFilesDataTimer);
+                loadTorrentFilesDataTimer = loadTorrentFilesData.delay(5000);
             }
         }).send();
     };
