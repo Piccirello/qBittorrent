@@ -45,6 +45,7 @@ window.qBittorrent.Misc ??= (() => {
             naturalSortCollator: naturalSortCollator,
             safeTrim: safeTrim,
             toFixedPointString: toFixedPointString,
+            roundNumber: roundNumber,
             containsAllTerms: containsAllTerms,
             sleep: sleep,
             downloadFile: downloadFile,
@@ -175,7 +176,7 @@ window.qBittorrent.Misc ??= (() => {
     };
 
     const friendlyPercentage = (value) => {
-        let percentage = (value * 100).round(1);
+        let percentage = window.qBittorrent.Misc.roundNumber(value * 100, 1);
         if (isNaN(percentage) || (percentage < 0))
             percentage = 0;
         if (percentage > 100)
@@ -244,6 +245,15 @@ window.qBittorrent.Misc ??= (() => {
         // Do not round up number
         const power = Math.pow(10, digits);
         return (Math.floor(power * number) / power).toFixed(digits);
+    };
+
+    /**
+     * @param {number} number
+     * @param {int} digits
+     */
+    const roundNumber = function(number, digits = 1) {
+        const multiplier = Math.pow(10, digits);
+        return Math.round(number * multiplier) / multiplier;
     };
 
     /**

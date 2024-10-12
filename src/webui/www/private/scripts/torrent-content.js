@@ -86,8 +86,7 @@ window.qBittorrent.TorrentContent ??= (() => {
     };
 
     const normalizeProgress = (progress) => {
-        // round to single digit
-        let p = Math.round((progress * 100) * 10) / 10;
+        let p = window.qBittorrent.Misc.roundNumber(progress * 100, 1);
         if ((p > 99.9) && (progress < 1))
             p = 99.9;
         return p;

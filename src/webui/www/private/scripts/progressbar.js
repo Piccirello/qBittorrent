@@ -122,7 +122,7 @@ window.qBittorrent.ProgressBar ??= (() => {
         value = Math.min(Math.max(value, 0), 100);
         this.vals.value = value;
 
-        const displayedValue = `${value.round(1).toFixed(1)}%`;
+        const displayedValue = `${window.qBittorrent.Misc.roundNumber(value, 1).toFixed(1)}%`;
         this.vals.dark.textContent = displayedValue;
         this.vals.light.textContent = displayedValue;
 

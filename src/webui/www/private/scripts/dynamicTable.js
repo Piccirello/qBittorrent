@@ -1222,8 +1222,8 @@ window.qBittorrent.DynamicTable ??= (() => {
             // progress
             this.columns["progress"].updateTd = function(td, row) {
                 const progress = this.getRowValue(row);
-                let progressFormatted = (progress * 100).round(1);
-                if ((progressFormatted === 100.0) && (progress !== 1.0))
+                let progressFormatted = window.qBittorrent.Misc.roundNumber(progress * 100, 1);
+                if ((progressFormatted > 99.9) && (progress < 1))
                     progressFormatted = 99.9;
 
                 if (td.getChildren("div").length > 0) {
@@ -1767,8 +1767,8 @@ window.qBittorrent.DynamicTable ??= (() => {
             // progress
             this.columns["progress"].updateTd = function(td, row) {
                 const progress = this.getRowValue(row);
-                let progressFormatted = (progress * 100).round(1);
-                if ((progressFormatted === 100.0) && (progress !== 1.0))
+                let progressFormatted = window.qBittorrent.Misc.roundNumber(progress * 100, 1);
+                if ((progressFormatted > 99.9) && (progress < 1))
                     progressFormatted = 99.9;
                 progressFormatted += "%";
                 td.textContent = progressFormatted;
