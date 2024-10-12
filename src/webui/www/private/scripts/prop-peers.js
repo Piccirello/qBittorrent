@@ -32,7 +32,8 @@ window.qBittorrent ??= {};
 window.qBittorrent.PropPeers ??= (() => {
     const exports = () => {
         return {
-            updateData: updateData
+            updateData: updateData,
+            clear: clear
         };
     };
 
@@ -110,6 +111,10 @@ window.qBittorrent.PropPeers ??= (() => {
         clearTimeout(loadTorrentPeersTimer);
         loadTorrentPeersTimer = -1;
         loadTorrentPeersData();
+    };
+
+    const clear = function() {
+        torrentPeersTable.clear();
     };
 
     const torrentPeersContextMenu = new window.qBittorrent.ContextMenu.ContextMenu({

@@ -32,7 +32,8 @@ window.qBittorrent ??= {};
 window.qBittorrent.PropGeneral ??= (() => {
     const exports = () => {
         return {
-            updateData: updateData
+            updateData: updateData,
+            clear: clear
         };
     };
 
@@ -252,6 +253,10 @@ window.qBittorrent.PropGeneral ??= (() => {
         clearTimeout(loadTorrentDataTimer);
         loadTorrentDataTimer = -1;
         loadTorrentData();
+    };
+
+    const clear = function() {
+        clearData();
     };
 
     return exports();

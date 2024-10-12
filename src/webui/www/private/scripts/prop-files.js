@@ -32,7 +32,8 @@ window.qBittorrent ??= {};
 window.qBittorrent.PropFiles ??= (() => {
     const exports = () => {
         return {
-            updateData: updateData
+            updateData: updateData,
+            clear: clear
         };
     };
 
@@ -70,7 +71,6 @@ window.qBittorrent.PropFiles ??= (() => {
         if (new_hash === "") {
             torrentFilesTable.clear();
             clearTimeout(loadTorrentFilesDataTimer);
-            loadTorrentFilesDataTimer = loadTorrentFilesData.delay(5000);
             return;
         }
         let loadedNewTorrent = false;
@@ -164,6 +164,10 @@ window.qBittorrent.PropFiles ??= (() => {
             singleFileRename(current_hash, selectedNodes[0]);
         else if (selectedNodes.length > 1)
             multiFileRename(current_hash, selectedRows);
+    };
+
+    const clear = function() {
+        torrentFilesTable.clear();
     };
 
     const torrentFilesTable = window.qBittorrent.TorrentContent.init("torrentFilesTableDiv", window.qBittorrent.DynamicTable.TorrentFilesTable, onFilePriorityChanged, onFileRenameHandler);
