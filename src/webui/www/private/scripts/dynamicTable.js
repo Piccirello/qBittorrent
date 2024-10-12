@@ -189,7 +189,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
                     resetElementBorderStyle(borderChangeElement, ((changeBorderSide === "right") ? "left" : "right"));
 
-                    borderChangeElement.getSiblings('[class=""]').each((el) => {
+                    borderChangeElement.getSiblings('[class=""]').forEach((el) => {
                         resetElementBorderStyle(el);
                     });
                 }
@@ -251,7 +251,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
                 if (this.currentHeaderAction === "drag") {
                     resetElementBorderStyle(el);
-                    el.getSiblings('[class=""]').each((el) => {
+                    el.getSiblings('[class=""]').forEach((el) => {
                         resetElementBorderStyle(el);
                     });
                 }
@@ -542,11 +542,11 @@ window.qBittorrent.DynamicTable ??= (() => {
                 th.textContent = this.columns[i].caption;
                 th.setAttribute("style", "width: " + this.columns[i].width + "px;" + this.columns[i].style);
                 th.columnName = this.columns[i].name;
-                th.addClass("column_" + th.columnName);
+                th.classList.add("column_" + th.columnName);
                 if ((this.columns[i].visible === "0") || this.columns[i].force_hide)
-                    th.addClass("invisible");
+                    th.classList.add("invisible");
                 else
-                    th.removeClass("invisible");
+                    th.classList.remove("invisible");
             }
         }
 
@@ -570,16 +570,16 @@ window.qBittorrent.DynamicTable ??= (() => {
             fths[pos].setAttribute("style", style);
 
             if (visible) {
-                ths[pos].removeClass("invisible");
-                fths[pos].removeClass("invisible");
+                ths[pos].classList.remove("invisible");
+                fths[pos].classList.remove("invisible");
                 for (let i = 0; i < trs.length; ++i)
-                    trs[i].getElements("td")[pos].removeClass("invisible");
+                    trs[i].getElements("td")[pos].classList.remove("invisible");
             }
             else {
-                ths[pos].addClass("invisible");
-                fths[pos].addClass("invisible");
+                ths[pos].classList.add("invisible");
+                fths[pos].classList.add("invisible");
                 for (let j = 0; j < trs.length; ++j)
-                    trs[j].getElements("td")[pos].addClass("invisible");
+                    trs[j].getElements("td")[pos].classList.add("invisible");
             }
             if (this.columns[pos].onResize !== null)
                 this.columns[pos].onResize(columnName);
@@ -620,16 +620,16 @@ window.qBittorrent.DynamicTable ??= (() => {
 
             const colElem = getCol(this.dynamicTableFixedHeaderDivId, newColumn);
             if (colElem !== null) {
-                colElem.addClass("sorted");
+                colElem.classList.add("sorted");
                 if (isReverse)
-                    colElem.addClass("reverse");
+                    colElem.classList.add("reverse");
                 else
-                    colElem.removeClass("reverse");
+                    colElem.classList.remove("reverse");
             }
             const oldColElem = getCol(this.dynamicTableFixedHeaderDivId, oldColumn);
             if (oldColElem !== null) {
-                oldColElem.removeClass("sorted");
-                oldColElem.removeClass("reverse");
+                oldColElem.classList.remove("sorted");
+                oldColElem.classList.remove("reverse");
             }
         }
 
@@ -657,7 +657,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 const tr = trs[i];
                 this.selectedRows.push(tr.rowId);
                 if (!tr.hasClass("selected"))
-                    tr.addClass("selected");
+                    tr.classList.add("selected");
             }
         }
 
@@ -686,7 +686,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
             let select = false;
             const that = this;
-            this.tableBody.getElements("tr").each((tr) => {
+            this.tableBody.getElements("tr").forEach((tr) => {
                 if ((tr.rowId === rowId1) || (tr.rowId === rowId2)) {
                     select = !select;
                     that.selectedRows.push(tr.rowId);
@@ -702,19 +702,19 @@ window.qBittorrent.DynamicTable ??= (() => {
         reselectRows(rowIds) {
             this.deselectAll();
             this.selectedRows = rowIds.slice();
-            this.tableBody.getElements("tr").each((tr) => {
+            this.tableBody.getElements("tr").forEach((tr) => {
                 if (rowIds.includes(tr.rowId))
-                    tr.addClass("selected");
+                    tr.classList.add("selected");
             });
         }
 
         setRowClass() {
             const that = this;
-            this.tableBody.getElements("tr").each((tr) => {
+            this.tableBody.getElements("tr").forEach((tr) => {
                 if (that.isRowSelected(tr.rowId))
-                    tr.addClass("selected");
+                    tr.classList.add("selected");
                 else
-                    tr.removeClass("selected");
+                    tr.classList.remove("selected");
             });
         }
 
@@ -870,7 +870,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                     for (let k = 0; k < this.columns.length; ++k) {
                         const td = new Element("td");
                         if ((this.columns[k].visible === "0") || this.columns[k].force_hide)
-                            td.addClass("invisible");
+                            td.classList.add("invisible");
                         td.injectInside(tr);
                     }
 
@@ -1693,7 +1693,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                     stopFN();
                 return true;
             });
-            tr.addClass("torrentsTableContextMenuTarget");
+            tr.classList.add("torrentsTableContextMenuTarget");
         }
 
         getCurrentTorrentID() {
@@ -1929,7 +1929,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         setupTr(tr) {
-            tr.addClass("searchTableRow");
+            tr.classList.add("searchTableRow");
         }
     }
 
@@ -1949,20 +1949,20 @@ window.qBittorrent.DynamicTable ??= (() => {
                 if (value) {
                     td.textContent = "QBT_TR(Yes)QBT_TR[CONTEXT=SearchPluginsTable]";
                     td.title = "QBT_TR(Yes)QBT_TR[CONTEXT=SearchPluginsTable]";
-                    td.getParent("tr").addClass("green");
-                    td.getParent("tr").removeClass("red");
+                    td.getParent("tr").classList.add("green");
+                    td.getParent("tr").classList.remove("red");
                 }
                 else {
                     td.textContent = "QBT_TR(No)QBT_TR[CONTEXT=SearchPluginsTable]";
                     td.title = "QBT_TR(No)QBT_TR[CONTEXT=SearchPluginsTable]";
-                    td.getParent("tr").addClass("red");
-                    td.getParent("tr").removeClass("green");
+                    td.getParent("tr").classList.add("red");
+                    td.getParent("tr").classList.remove("green");
                 }
             };
         }
 
         setupTr(tr) {
-            tr.addClass("searchPluginsTableRow");
+            tr.classList.add("searchPluginsTableRow");
         }
     }
 
@@ -1993,7 +1993,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         populateTable(fileTree) {
             this.fileTree = fileTree;
             const root = fileTree.getRoot();
-            root.children.each((node) => {
+            root.children.forEach((node) => {
                 this.#addNodeToTable(node, 0);
             });
 
@@ -2005,7 +2005,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 rowId: node.rowId,
             });
 
-            node.children.each((child) => {
+            node.children.forEach((child) => {
                 this.#addNodeToTable(child, depth + 1);
             });
         }
@@ -2289,7 +2289,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 return (this.reverseSort === "0") ? res : -res;
             });
 
-            nodes.each((node) => {
+            nodes.forEach((node) => {
                 if (node.children.length > 0)
                     this._sortNodesByColumn(node.children, column);
             });
@@ -2347,7 +2347,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
 
                 const filteredRows = [];
-                this.getRoot().children.each((child) => {
+                this.getRoot().children.forEach((child) => {
                     this._filterNodes(child, this.filterTerms, filteredRows);
                 });
                 filteredRows.reverse();
@@ -2409,7 +2409,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
         populateTable(root) {
             this.fileTree = new window.qBittorrent.FileTree.FileTree(root);
-            root.children.each((node) => {
+            root.children.forEach((node) => {
                 this._addNodeToTable(node, 0, root);
             });
         }
@@ -2433,7 +2433,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 this.updateRowData(node.data);
             }
 
-            node.children.each((child) => {
+            node.children.forEach((child) => {
                 this._addNodeToTable(child, depth + 1, node);
             });
         }
@@ -2653,7 +2653,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         reselectRows(rowIds) {
             const that = this;
             this.deselectAll();
-            this.tableBody.getElements("tr").each((tr) => {
+            this.tableBody.getElements("tr").forEach((tr) => {
                 if (rowIds.includes(tr.rowId)) {
                     const node = that.getNode(tr.rowId);
                     node.checked = 0;
@@ -2683,7 +2683,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 return (this.reverseSort === "0") ? res : -res;
             });
 
-            nodes.each((node) => {
+            nodes.forEach((node) => {
                 if (node.children.length > 0)
                     this._sortNodesByColumn(node.children, column);
             });
@@ -2741,7 +2741,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
 
                 const filteredRows = [];
-                this.getRoot().children.each((child) => {
+                this.getRoot().children.forEach((child) => {
                     this._filterNodes(child, this.filterTerms, filteredRows);
                 });
                 filteredRows.reverse();
@@ -2965,7 +2965,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 if (row.rowId === rowId) {
                     articleId = row.full_data.dataId;
                     feedUid = row.full_data.feedUid;
-                    this.tableBody.rows[row.rowId].removeClass("unreadArticle");
+                    this.tableBody.rows[row.rowId].classList.remove("unreadArticle");
                     break;
                 }
             }
@@ -2977,15 +2977,15 @@ window.qBittorrent.DynamicTable ??= (() => {
                 qBittorrent.Client.createDownloadWindow(name, torrentURL);
                 return true;
             });
-            tr.addClass("torrentsTableContextMenuTarget");
+            tr.classList.add("torrentsTableContextMenuTarget");
         }
         updateRow(tr, fullUpdate) {
             const row = this.rows.get(tr.rowId);
             const data = row[fullUpdate ? "full_data" : "data"];
             if (!row.full_data.isRead)
-                tr.addClass("unreadArticle");
+                tr.classList.add("unreadArticle");
             else
-                tr.removeClass("unreadArticle");
+                tr.classList.remove("unreadArticle");
 
             const tds = tr.getElements("td");
             for (let i = 0; i < this.columns.length; ++i) {
@@ -3245,12 +3245,12 @@ window.qBittorrent.DynamicTable ??= (() => {
             const data = row[fullUpdate ? "full_data" : "data"];
 
             if (row.full_data.isFeed) {
-                tr.addClass("articleTableFeed");
-                tr.removeClass("articleTableArticle");
+                tr.classList.add("articleTableFeed");
+                tr.classList.remove("articleTableArticle");
             }
             else {
-                tr.removeClass("articleTableFeed");
-                tr.addClass("articleTableArticle");
+                tr.classList.remove("articleTableFeed");
+                tr.classList.add("articleTableArticle");
             }
 
             const tds = tr.getElements("td");
@@ -3345,7 +3345,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         setupCommonEvents() {}
 
         setupTr(tr) {
-            tr.addClass("logTableRow");
+            tr.classList.add("logTableRow");
         }
     }
 
