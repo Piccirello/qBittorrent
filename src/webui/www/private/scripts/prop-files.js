@@ -99,7 +99,7 @@ q    };
                 else {
                     window.qBittorrent.TorrentContent.updateData(files);
                     if (loadedNewTorrent)
-                        window.qBittorrent.TorrentContent.collapseAllNodes();
+                        window.qBittorrent.TorrentContent.collapseAllFolders();
                 }
             })
             .finally(() => {

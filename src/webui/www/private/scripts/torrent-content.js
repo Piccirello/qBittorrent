@@ -45,7 +45,7 @@ window.qBittorrent.TorrentContent ??= (() => {
             collapseIconClicked: collapseIconClicked,
             expandFolder: expandFolder,
             collapseFolder: collapseFolder,
-            collapseAllNodes: collapseAllNodes,
+            collapseAllFolders: collapseAllFolders,
             clearFilterInputTimer: clearFilterInputTimer
         };
     };
@@ -433,22 +433,19 @@ window.qBittorrent.TorrentContent ??= (() => {
         const node = torrentFilesTable.getNode(id);
         const isCollapsed = (event.parentElement.dataset.collapsed === "true");
 
-        if (isCollapsed)
-            expandNode(node);
-        else
-            collapseNode(node);
+        _collapseNode(node, !isCollapsed);
     };
 
     const expandFolder = (id) => {
         const node = torrentFilesTable.getNode(id);
         if (node.isFolder)
-            expandNode(node);
+            _collapseNode(node, false);
     };
 
     const collapseFolder = (id) => {
         const node = torrentFilesTable.getNode(id);
         if (node.isFolder)
-            collapseNode(node);
+            _collapseNode(node, true);
     };
 
     const filesPriorityMenuClicked = (priority) => {
@@ -600,9 +597,9 @@ window.qBittorrent.TorrentContent ??= (() => {
                 torrentFilesTable.updateTable(true);
 
                 if (value.trim() === "")
-                    collapseAllNodes();
+                    collapseAllFolders();
                 else
-                    expandAllNodes();
+                    expandAllFolders();
             }, window.qBittorrent.Misc.FILTER_INPUT_DELAY);
         });
 
@@ -654,64 +651,61 @@ window.qBittorrent.TorrentContent ??= (() => {
         return true;
     };
 
-    const expandNode = (node) => {
-        _collapseNode(node, false, false, false);
-    };
-
-    const collapseNode = (node) => {
-        _collapseNode(node, true, false, false);
-    };
-
-    const expandAllNodes = () => {
+    const expandAllFolders = () => {
         const root = torrentFilesTable.getRoot();
         root.children.forEach((node) => {
             node.children.forEach((child) => {
-                _collapseNode(child, false, true, false);
+                _collapseAllNodes(child, false, false);
             });
         });
     };
 
-    const collapseAllNodes = () => {
+    const collapseAllFolders = () => {
         const root = torrentFilesTable.getRoot();
         root.children.forEach((node) => {
             node.children.forEach((child) => {
-                _collapseNode(child, true, true, false);
+                _collapseAllNodes(child, true, false);
             });
         });
     };
 
     /**
-     * Collapses a folder node with the option to recursively collapse all children
-     * @param {FolderNode} node the node to collapse/expand
+     * Collapses/expands a folder
+     * @param {FolderNode} node
      * @param {boolean} shouldCollapse true if the node should be collapsed, false if it should be expanded
-     * @param {boolean} applyToChildren true if the node's children should also be collapsed, recursively
-     * @param {boolean} isChildNode true if the current node is a child of the original node we collapsed/expanded
      */
-    const _collapseNode = (node, shouldCollapse, applyToChildren, isChildNode) => {
-        if (!node.isFolder)
-            return;
+    const _collapseNode = (node, shouldCollapse) => {
+        const hideNode = (node, shouldHide) => {
+            _hideNode(node, shouldHide);
 
-        const shouldExpand = !shouldCollapse;
-        const isNodeCollapsed = _isCollapsed(node);
-        const nodeInCorrectState = ((shouldCollapse && isNodeCollapsed) || (shouldExpand && !isNodeCollapsed));
-        const canSkipNode = (isChildNode && (!applyToChildren || nodeInCorrectState));
-        if (!isChildNode || applyToChildren || !canSkipNode)
+            // don't unhide nodes whose parent folder is collapsed
+            if (shouldHide || !_isCollapsed(node))
+                node.children.forEach(child => hideNode(child, shouldHide));
+        };
+
+        if (node.isFolder) {
             _updateNodeState(node, shouldCollapse);
 
-        node.children.forEach((child) => {
-            _hideNode(child, shouldCollapse);
+            node.children.forEach((child) => {
+                hideNode(child, shouldCollapse);
+            });
+        }
+    };
 
-            if (!child.isFolder)
-                return;
+    /**
+     * Collapses/expands a folder and all of its children, recursively
+     * @param {FolderNode} node the node to collapse/expand
+     * @param {boolean} shouldCollapse true if the node should be collapsed, false if it should be expanded
+     */
+    const _collapseAllNodes = (node, shouldCollapse) => {
+        if (node.isFolder) {
+            _updateNodeState(node, shouldCollapse);
 
-            // don't expand children that have been independently collapsed, unless applyToChildren is true
-            const shouldExpandChildren = (shouldExpand && applyToChildren);
-            const isChildCollapsed = _isCollapsed(child);
-            if (!shouldExpandChildren && isChildCollapsed)
-                return;
-
-            _collapseNode(child, shouldCollapse, applyToChildren, true);
-        });
+            node.children.forEach((child) => {
+                _hideNode(child, shouldCollapse);
+                _collapseAllNodes(child, shouldCollapse);
+            });
+        }
     };
 
     return exports();
