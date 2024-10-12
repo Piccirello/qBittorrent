@@ -57,7 +57,8 @@ window.qBittorrent.TorrentContent ??= (() => {
     let onFilePriorityChanged;
 
     const normalizePriority = (priority) => {
-        priority = parseInt(priority, 10);
+        if (typeof priority !== "number")
+            priority = parseInt(priority, 10);
 
         switch (priority) {
             case FilePriority.Ignored:
@@ -85,8 +86,9 @@ window.qBittorrent.TorrentContent ??= (() => {
     };
 
     const normalizeProgress = (progress) => {
-        let p = (progress * 100).round(1);
-        if ((p === 100) && (progress < 1))
+        // round to single digit
+        let p = Math.round((progress * 100) * 10) / 10;
+        if ((p > 99.9) && (progress < 1))
             p = 99.9;
         return p;
     };
@@ -100,7 +102,7 @@ window.qBittorrent.TorrentContent ??= (() => {
             rowIds.push(node.rowId);
 
             if (node.isFolder) {
-                node.children.each((child) => {
+                node.children.forEach((child) => {
                     getChildFiles(child);
                 });
             }
@@ -109,7 +111,7 @@ window.qBittorrent.TorrentContent ??= (() => {
         const node = torrentFilesTable.getNode(id);
         const rowIds = [node.rowId];
 
-        node.children.each((child) => {
+        node.children.forEach((child) => {
             getChildFiles(child);
         });
 
@@ -121,7 +123,7 @@ window.qBittorrent.TorrentContent ??= (() => {
 
         const checkbox = e.target;
         const priority = checkbox.checked ? FilePriority.Normal : FilePriority.Ignored;
-        const id = checkbox.getAttribute("data-id");
+        const id = checkbox.dataset.id;
 
         updatePriority([id], priority);
     };
@@ -129,7 +131,7 @@ window.qBittorrent.TorrentContent ??= (() => {
     const fileComboboxChanged = (e) => {
         const combobox = e.target;
         const priority = combobox.value;
-        const id = combobox.getAttribute("data-id");
+        const id = combobox.dataset.id;
 
         updatePriority([id], priority);
     };
@@ -367,29 +369,24 @@ window.qBittorrent.TorrentContent ??= (() => {
             updateGlobalCheckbox();
     };
 
-    const buildTree = function(files) {
+    const buildTree = (files) => {
         let rowId = 0;
         const rootNode = new window.qBittorrent.FileTree.FolderNode();
 
-        files.forEach((file) => {
+        for (const file of files) {
             const pathItems = file.fileName.split(window.qBittorrent.Filesystem.PathSeparator);
 
-            pathItems.pop(); // remove last item (i.e. file name)
             let parent = rootNode;
-            pathItems.forEach((folderName, i) => {
+            const numFolders = pathItems.length - 1;
+            // find parent folder
+            for (let i = 0; i < numFolders; ++i) {
+                const folderName = pathItems[i];
                 if (folderName === ".unwanted")
-                    return;
+                    continue;
 
                 let folderNode = null;
-                if (parent.children !== null) {
-                    for (let i = 0; i < parent.children.length; ++i) {
-                        const childFolder = parent.children[i];
-                        if (childFolder.name === folderName) {
-                            folderNode = childFolder;
-                            break;
-                        }
-                    }
-                }
+                if (parent.children !== null)
+                    folderNode = parent.children.find(child => child.name === folderName) ?? null;
 
                 if (folderNode === null) {
                     folderNode = new window.qBittorrent.FileTree.FolderNode();
@@ -407,7 +404,7 @@ window.qBittorrent.TorrentContent ??= (() => {
                 }
 
                 parent = folderNode;
-            });
+            }
 
             const isChecked = file.checked ? TriState.Checked : TriState.Unchecked;
             const childNode = new window.qBittorrent.FileTree.FileNode();
@@ -422,19 +419,19 @@ window.qBittorrent.TorrentContent ??= (() => {
             childNode.availability = file.availability;
             childNode.root = parent;
             childNode.parent = parent;
-            childNode.depth = pathItems.length;
+            childNode.depth = numFolders;
             parent.addChild(childNode);
 
             ++rowId;
-        });
+        };
 
         return new window.qBittorrent.FileTree.FileTree(rootNode);
     };
 
     const collapseIconClicked = (event) => {
-        const id = event.getAttribute("data-id");
+        const id = event.dataset.id;
         const node = torrentFilesTable.getNode(id);
-        const isCollapsed = (event.parentElement.getAttribute("data-collapsed") === "true");
+        const isCollapsed = (event.parentElement.dataset.collapsed === "true");
 
         if (isCollapsed)
             expandNode(node);
@@ -462,7 +459,7 @@ window.qBittorrent.TorrentContent ??= (() => {
         updatePriority(selectedRows, priority);
     };
 
-    const updatePriority = function(rows, priority) {
+    const updatePriority = (rows, priority) => {
         const uniqueChildRowIds = new Set();
         for (const row of rows) {
             getAllChildren(row).forEach((rowId) => {
@@ -621,7 +618,7 @@ window.qBittorrent.TorrentContent ??= (() => {
      * Show/hide a node's row
      */
     const _hideNode = (node, shouldHide) => {
-        const span = $("filesTablefileName" + node.rowId);
+        const span = document.getElementById(`filesTablefileName${node.rowId}`);
         // span won't exist if row has been filtered out
         if (span === null)
             return;
@@ -633,11 +630,12 @@ window.qBittorrent.TorrentContent ??= (() => {
      * Update a node's collapsed state and icon
      */
     const _updateNodeState = (node, isCollapsed) => {
-        const span = $("filesTablefileName" + node.rowId);
+        const span = document.getElementById(`filesTablefileName${node.rowId}`);
         // span won't exist if row has been filtered out
-        if (span === null)
-            return;
-        const td = span.parentElement;
+        if (span !== null) {
+            const td = span.parentElement;
+            // store collapsed state
+            td.dataset.collapsed = isCollapsed;
 
         // store collapsed state
         td.setAttribute("data-collapsed", isCollapsed);
@@ -648,12 +646,12 @@ window.qBittorrent.TorrentContent ??= (() => {
     };
 
     const _isCollapsed = (node) => {
-        const span = $("filesTablefileName" + node.rowId);
-        if (span === null)
-            return true;
-
-        const td = span.parentElement;
-        return td.getAttribute("data-collapsed") === "true";
+        const span = document.getElementById(`filesTablefileName${node.rowId}`);
+        if (span !== null) {
+            const td = span.parentElement;
+            return td.dataset.collapsed === "true";
+        }
+        return true;
     };
 
     const expandNode = (node) => {
@@ -666,8 +664,8 @@ window.qBittorrent.TorrentContent ??= (() => {
 
     const expandAllNodes = () => {
         const root = torrentFilesTable.getRoot();
-        root.children.each((node) => {
-            node.children.each((child) => {
+        root.children.forEach((node) => {
+            node.children.forEach((child) => {
                 _collapseNode(child, false, true, false);
             });
         });
@@ -675,8 +673,8 @@ window.qBittorrent.TorrentContent ??= (() => {
 
     const collapseAllNodes = () => {
         const root = torrentFilesTable.getRoot();
-        root.children.each((node) => {
-            node.children.each((child) => {
+        root.children.forEach((node) => {
+            node.children.forEach((child) => {
                 _collapseNode(child, true, true, false);
             });
         });
@@ -700,7 +698,7 @@ window.qBittorrent.TorrentContent ??= (() => {
         if (!isChildNode || applyToChildren || !canSkipNode)
             _updateNodeState(node, shouldCollapse);
 
-        node.children.each((child) => {
+        node.children.forEach((child) => {
             _hideNode(child, shouldCollapse);
 
             if (!child.isFolder)

@@ -142,12 +142,15 @@ window.qBittorrent.FileTree ??= (() => {
             return this.root;
         }
 
+        /**
+         * @param {FileNode|FolderNode} node
+         */
         generateNodeMap(node) {
             // don't store root node in map
             if (node.root !== null)
                 this.#nodeMap.set(node.rowId, node);
 
-            node.children.each((child) => {
+            node.children.forEach((child) => {
                 this.generateNodeMap(child);
             });
         }
@@ -187,7 +190,7 @@ window.qBittorrent.FileTree ??= (() => {
 
         #getArrayOfNodes(node, array) {
             array.push(node);
-            node.children.each((child) => {
+            node.children.forEach((child) => {
                 this.#getArrayOfNodes(child, array);
             });
         }
