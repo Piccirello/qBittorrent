@@ -831,34 +831,21 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
             }
 
-            const trs = this.tableBody.getElements("tr");
+            const trs = [...this.tableBody.querySelectorAll("tr")];
+            const trMap = new Map(trs.map(tr => [tr.rowId, tr]));
 
             for (let rowPos = 0; rowPos < rows.length; ++rowPos) {
                 const rowId = rows[rowPos]["rowId"];
-                let tr_found = false;
-                for (let j = rowPos; j < trs.length; ++j) {
-                    if (trs[j]["rowId"] === rowId) {
-                        tr_found = true;
-                        // move row into correct location
-                        if (rowPos !== j) {
-                            trs[j].inject(trs[rowPos], "before");
-                            const tmpTr = trs[j];
-                            trs.splice(j, 1);
-                            trs.splice(rowPos, 0, tmpTr);
-                        }
-                        break;
-                    }
+                const existingTr = trMap.get(rowId);
+                if (existingTr !== undefined) {
+                    this.updateRow(existingTr, fullUpdate);
                 }
-                if (tr_found) { // row already exists in the table
-                    this.updateRow(trs[rowPos], fullUpdate);
-                }
-                else { // else create a new row in the table
+                else {
                     const tr = document.createElement("tr");
                     // set tabindex so element receives keydown events
                     // more info: https://developer.mozilla.org/en-US/docs/Web/API/Element/keydown_event
                     tr.tabIndex = -1;
 
-                    const rowId = rows[rowPos]["rowId"];
                     tr.setAttribute("data-row-id", rowId);
                     tr["rowId"] = rowId;
 
@@ -869,15 +856,9 @@ window.qBittorrent.DynamicTable ??= (() => {
                         tr.append(td);
                     }
 
-                    // Insert
-                    if (rowPos >= trs.length) {
-                        tr.inject(this.tableBody);
-                        trs.push(tr);
-                    }
-                    else {
-                        tr.inject(trs[rowPos], "before");
-                        trs.splice(rowPos, 0, tr);
-                    }
+                    // add to end of table - we'll move into the proper order later
+                    this.tableBody.appendChild(tr);
+                    trMap.set(rowId, tr);
 
                     // Update context menu
                     this.contextMenu?.addTarget(tr);
@@ -886,8 +867,25 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
             }
 
-            const rowPos = rows.length;
+            // reorder table rows
+            let prevTr = null;
+            for (let rowPos = 0; rowPos < rows.length; ++rowPos) {
+                const { rowId } = rows[rowPos];
+                const tr = trMap.get(rowId);
 
+                const trInCorrectLocation = rowId === trs[rowPos]?.rowId;
+                if (!trInCorrectLocation) {
+                    // move row into correct location
+                    if (prevTr === null)
+                        // insert as first row in table
+                        this.tableBody.insertBefore(tr, trs[0]);
+                    else
+                        prevTr.after(tr);
+                }
+                prevTr = tr;
+            }
+
+            const rowPos = rows.length;
             while ((rowPos < trs.length) && (trs.length > 0))
                 trs.pop().destroy();
         }
