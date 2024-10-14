@@ -787,26 +787,14 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
             }
 
-            const trs = this.tableBody.getElements("tr");
+            const trs = [...this.tableBody.querySelectorAll("tr")];
+            const trMap = new Map(trs.map(tr => [tr.rowId, tr]));
 
             for (let rowPos = 0; rowPos < rows.length; ++rowPos) {
                 const rowId = rows[rowPos]["rowId"];
-                let tr_found = false;
-                for (let j = rowPos; j < trs.length; ++j) {
-                    if (trs[j]["rowId"] === rowId) {
-                        tr_found = true;
-                        // move row into correct location
-                        if (rowPos !== j) {
-                            trs[j].inject(trs[rowPos], "before");
-                            const tmpTr = trs[j];
-                            trs.splice(j, 1);
-                            trs.splice(rowPos, 0, tmpTr);
-                        }
-                        break;
-                    }
-                }
-                if (tr_found) { // row already exists in the table
-                    this.updateRow(trs[rowPos], fullUpdate);
+                const existingTr = trMap.get(rowId);
+                if (existingTr !== undefined) { // row already exists in the table
+                    this.updateRow(existingTr, fullUpdate);
                 }
                 else { // else create a new row in the table
                     const tr = new Element("tr");
@@ -814,7 +802,6 @@ window.qBittorrent.DynamicTable ??= (() => {
                     // more info: https://developer.mozilla.org/en-US/docs/Web/API/Element/keydown_event
                     tr.tabindex = "-1";
 
-                    const rowId = rows[rowPos]["rowId"];
                     tr.setAttribute("data-row-id", rowId);
                     tr["rowId"] = rowId;
 
@@ -871,29 +858,39 @@ window.qBittorrent.DynamicTable ??= (() => {
                         const td = new Element("td");
                         if ((this.columns[k].visible === "0") || this.columns[k].force_hide)
                             td.classList.add("invisible");
-                        td.injectInside(tr);
+                        tr.appendChild(td);
                     }
 
-                    // Insert
-                    if (rowPos >= trs.length) {
-                        tr.inject(this.tableBody);
-                        trs.push(tr);
-                    }
-                    else {
-                        tr.inject(trs[rowPos], "before");
-                        trs.splice(rowPos, 0, tr);
-                    }
+                    // add to end of table - we'll move into the proper order later
+                    this.tableBody.appendChild(tr);
+                    trMap.set(rowId, tr);
 
                     // Update context menu
-                    if (this.contextMenu)
-                        this.contextMenu.addTarget(tr);
+                    this.contextMenu?.addTarget(tr);
 
                     this.updateRow(tr, true);
                 }
             }
 
-            const rowPos = rows.length;
+            // reorder table rows
+            let prevTr = null;
+            for (let rowPos = 0; rowPos < rows.length; ++rowPos) {
+                const { rowId } = rows[rowPos];
+                const tr = trMap.get(rowId);
 
+                const trInCorrectLocation = rowId === trs[rowPos]?.rowId;
+                if (!trInCorrectLocation) {
+                    // move row into correct location
+                    if (prevTr === null)
+                        // insert as first row in table
+                        this.tableBody.insertBefore(tr, trs[0]);
+                    else
+                        prevTr.after(tr);
+                }
+                prevTr = tr;
+            }
+
+            const rowPos = rows.length;
             while ((rowPos < trs.length) && (trs.length > 0))
                 trs.pop().destroy();
         }
@@ -2029,8 +2026,8 @@ window.qBittorrent.DynamicTable ??= (() => {
          * @param {Map|null} diffMap the diff of changes made to the file tree since the last render. when null, diff is computed automatically.
          */
         updateTable(fullUpdate = false, diffMap = null) {
-            // NOTE: this function does not currently support efficiently adding new rows after the initial populateTable.
-            // if you need to add additional rows to the table, you must perform a full re-render by specifying `fullUpdate` as `true`
+            // NOTE: this function does not currently support adding rows to the table; it only supports updating and sorting existing rows.
+            // if you need to add rows to the table, you must perform a full re-render by specifying `fullUpdate` as `true`
 
             if (fullUpdate) {
                 super.updateTable(true);
@@ -2041,12 +2038,10 @@ window.qBittorrent.DynamicTable ??= (() => {
             if (diffMap === null)
                 diffMap = window.qBittorrent.FileTree.FileTree.CompareTrees(this.fileTree.root, this.fileTreeRootSnapshot);
 
-            if (diffMap.size > 0) {
-                // make trs efficient to access for this process
-                const trMap = new Map();
-                for (const tr of this.tableBody.querySelectorAll("tr"))
-                    trMap.set(tr.rowId, tr);
+            const trs = [...this.tableBody.querySelectorAll("tr")];
+            const trMap = new Map(trs.map(tr => [tr.rowId, tr]));
 
+            if (diffMap.size > 0) {
                 for (const [rowId, changedColumns] of diffMap.entries()) {
                     const row = this.rows.get(rowId);
                     const tds = trMap.get(rowId).querySelectorAll("td");
@@ -2063,32 +2058,30 @@ window.qBittorrent.DynamicTable ??= (() => {
                 this.fileTreeRootSnapshot = this.fileTree.clone();
             }
 
-            // sort rows into appropriate order
-            const rows = this.getFilteredAndSortedRows();
-            const trs = this.tableBody.getElements("tr");
-            for (let expectedPosition = 0; expectedPosition < rows.length; ++expectedPosition) {
-                const rowId = rows[expectedPosition]["rowId"];
-                let actualPosition = -1;
-                for (let i = expectedPosition; i < trs.length; ++i) {
-                    if (trs[i]["rowId"] === rowId) {
-                        actualPosition = i;
-                        break;
-                    }
-                }
+            // sort rows into expected order
+            const rowIds = this.getFilteredAndSortedRows().map(row => row.rowId);
 
-                if (actualPosition === -1) {
-                    console.log("error: performing full table re-render");
+            // reorder table rows
+            let prevTr = null;
+            for (let expectedPosition = 0; expectedPosition < rowIds.length; ++expectedPosition) {
+                const rowId = rowIds[expectedPosition];
+                const tr = trMap.get(rowId);
+                if (tr === undefined) {
+                    // this function isn't equipped to handle this scenario. we must perform a full re-render
                     this.updateTable(true);
                     return;
                 }
 
-                // move row into correct location
-                if (expectedPosition !== actualPosition) {
-                    trs[actualPosition].inject(trs[expectedPosition], "before");
-                    const tmpTr = trs[actualPosition];
-                    trs.splice(actualPosition, 1);
-                    trs.splice(expectedPosition, 0, tmpTr);
+                const trInCorrectLocation = rowId === trs[expectedPosition]?.rowId;
+                if (!trInCorrectLocation) {
+                    // move row into correct location
+                    if (prevTr === null)
+                        // insert as first row in table
+                        this.tableBody.insertBefore(tr, trs[0]);
+                    else
+                        prevTr.after(tr);
                 }
+                prevTr = tr;
             }
         }
 
