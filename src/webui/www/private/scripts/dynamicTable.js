@@ -2857,18 +2857,13 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
         updateRow(tr, fullUpdate) {
             const row = this.rows.get(tr.rowId);
-            const data = row[fullUpdate ? "full_data" : "data"];
-
             const tds = tr.getElements("td");
-            for (let i = 0; i < this.columns.length; ++i) {
-                if (Object.hasOwn(data, this.columns[i].dataProperties[0]))
-                    this.columns[i].updateTd(tds[i], row);
-            }
-            row["data"] = {};
             tds[0].style.overflow = "visible";
             const indentation = row.full_data.indentation;
             tds[0].style.paddingLeft = (indentation * 32 + 4) + "px";
             tds[1].style.paddingLeft = (indentation * 32 + 4) + "px";
+
+            return super.updateRow(tr, fullUpdate);
         }
         updateIcons() {
             // state_icon
@@ -2993,15 +2988,9 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
         updateRow(tr, fullUpdate) {
             const row = this.rows.get(tr.rowId);
-            const data = row[fullUpdate ? "full_data" : "data"];
             tr.classList.toggle("unreadArticle", !row.full_data.isRead);
 
-            const tds = tr.getElements("td");
-            for (let i = 0; i < this.columns.length; ++i) {
-                if (Object.hasOwn(data, this.columns[i].dataProperties[0]))
-                    this.columns[i].updateTd(tds[i], row);
-            }
-            row["data"] = {};
+            return super.updateRow(tr, fullUpdate);
         }
         newColumn(name, style, caption, defaultWidth, defaultVisible) {
             const column = {};
@@ -3258,8 +3247,6 @@ window.qBittorrent.DynamicTable ??= (() => {
         selectRow() {}
         updateRow(tr, fullUpdate) {
             const row = this.rows.get(tr.rowId);
-            const data = row[fullUpdate ? "full_data" : "data"];
-
             if (row.full_data.isFeed) {
                 tr.classList.add("articleTableFeed");
                 tr.classList.remove("articleTableArticle");
@@ -3269,12 +3256,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 tr.classList.add("articleTableArticle");
             }
 
-            const tds = tr.getElements("td");
-            for (let i = 0; i < this.columns.length; ++i) {
-                if (Object.hasOwn(data, this.columns[i].dataProperties[0]))
-                    this.columns[i].updateTd(tds[i], row);
-            }
-            row["data"] = {};
+            return super.updateRow(tr, fullUpdate);
         }
     }
 
