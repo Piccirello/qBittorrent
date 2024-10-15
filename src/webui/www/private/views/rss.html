@@ -442,7 +442,7 @@
                     torrentDate.append(torrentDateDesc);
 
                     const torrentDateData = document.createElement("span");
-                    torrentDateData.textContent = new Date(article.date).toLocaleString();
+                    torrentDateData.textContent = window.qBittorrent.Client.formatDate(article.date);
                     torrentDate.append(torrentDateData);
 
                     return torrentDate;

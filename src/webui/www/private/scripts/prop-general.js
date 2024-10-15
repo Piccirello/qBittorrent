@@ -164,7 +164,7 @@ window.qBittorrent.PropGeneral ??= (() => {
                     $("reannounce").textContent = window.qBittorrent.Misc.friendlyDuration(data.reannounce);
 
                     const lastSeen = (data.last_seen >= 0)
-                        ? new Date(data.last_seen * 1000).toLocaleString()
+                        ? window.qBittorrent.Client.formatDate(data.last_seen * 1000)
                         : "QBT_TR(Never)QBT_TR[CONTEXT=PropertiesWidget]";
                     $("last_seen").textContent = lastSeen;
 
@@ -182,17 +182,17 @@ window.qBittorrent.PropGeneral ??= (() => {
                     $("created_by").textContent = data.created_by;
 
                     const additionDate = (data.addition_date >= 0)
-                        ? new Date(data.addition_date * 1000).toLocaleString()
+                        ? window.qBittorrent.Client.formatDate(data.addition_date * 1000)
                         : "QBT_TR(Unknown)QBT_TR[CONTEXT=HttpServer]";
                     $("addition_date").textContent = additionDate;
 
                     const completionDate = (data.completion_date >= 0)
-                        ? new Date(data.completion_date * 1000).toLocaleString()
+                        ? window.qBittorrent.Client.formatDate(data.completion_date * 1000)
                         : "";
                     $("completion_date").textContent = completionDate;
 
                     const creationDate = (data.creation_date >= 0)
-                        ? new Date(data.creation_date * 1000).toLocaleString()
+                        ? window.qBittorrent.Client.formatDate(data.creation_date * 1000)
                         : "";
                     $("creation_date").textContent = creationDate;
 

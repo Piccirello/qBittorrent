@@ -31,6 +31,7 @@ window.qBittorrent.Client ??= (() => {
         return {
             closeWindow: closeWindow,
             closeWindows: closeWindows,
+            formatDate: formatDate,
             getSyncMainDataInterval: getSyncMainDataInterval,
             isStopped: isStopped,
             stop: stop,
@@ -53,6 +54,12 @@ window.qBittorrent.Client ??= (() => {
 
     const closeWindows = function() {
         MochaUI.closeAll();
+    };
+
+    const formatDate = function(epochSec) {
+        // use the system date, not the user's selected locale
+        // https://github.com/qbittorrent/qBittorrent/pull/6478#issuecomment-284503296
+        return new Date(epochSec).toLocaleString(navigator.language);
     };
 
     const getSyncMainDataInterval = function() {

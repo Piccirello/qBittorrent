@@ -149,6 +149,7 @@ let copyCommentFN = function() {};
 let setQueuePositionFN = function() {};
 let exportTorrentFN = function() {};
 
+
 const initializeWindows = function() {
     saveWindowSize = function(windowId) {
         const size = $(windowId).getSize();
