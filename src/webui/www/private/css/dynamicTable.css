@@ -32,6 +32,11 @@
     vertical-align: middle;
 }
 
+#transferList #transferList_pad {
+    /* override for default mocha inline style */
+    display: flex !important;
+}
+
 tr.dynamicTableHeader {
     cursor: pointer;
 }
@@ -82,8 +87,15 @@ tr.dynamicTableHeader {
     padding-left: 25px;
 }
 
+div:has(> div.dynamicTableFixedHeaderDiv):not(.invisible) {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
 .dynamicTableFixedHeaderDiv {
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 #propertiesPanel .dynamicTableFixedHeaderDiv,
@@ -93,6 +105,7 @@ tr.dynamicTableHeader {
 
 .dynamicTableDiv {
     overflow: auto;
+    flex-grow: 1;
 }
 
 .dynamicTableDiv thead th {

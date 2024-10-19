@@ -249,6 +249,7 @@ li.divider {
 
 .pad {
     padding: 8px;
+    height: 100%;
 }
 
 .panel-header {
