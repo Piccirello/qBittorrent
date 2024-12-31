@@ -2464,14 +2464,6 @@ window.qBittorrent.DynamicTable ??= (() => {
             };
 
             const getFilteredRows = function() {
-                if (this.filterTerms.length === 0) {
-                    const nodeArray = this.fileTree.toArray();
-                    const filteredRows = nodeArray.map((node) => {
-                        return this.getRow(node);
-                    });
-                    return filteredRows;
-                }
-
                 const filteredRows = [];
                 this.getRoot().children.forEach((child) => {
                     this._filterNodes(child, this.filterTerms, filteredRows);
@@ -2860,14 +2852,6 @@ window.qBittorrent.DynamicTable ??= (() => {
             };
 
             const getFilteredRows = function() {
-                if (this.filterTerms.length === 0) {
-                    const nodeArray = this.fileTree.toArray();
-                    const filteredRows = nodeArray.map((node) => {
-                        return this.getRow(node);
-                    });
-                    return filteredRows;
-                }
-
                 const filteredRows = [];
                 this.getRoot().children.forEach((child) => {
                     this._filterNodes(child, this.filterTerms, filteredRows);
