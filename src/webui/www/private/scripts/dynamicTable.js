@@ -2157,7 +2157,6 @@ window.qBittorrent.DynamicTable ??= (() => {
 
     class TorrentFilesTable extends DynamicTable {
         rowHeight = 29;
-        enableVirtualRows = false;
         #IdentifierColumn = "name";
         filterTerms = [];
         prevFilterTerms = [];
@@ -2167,9 +2166,11 @@ window.qBittorrent.DynamicTable ??= (() => {
         prevReverseSort = null;
         fileTree = null;
         fileTreeRootSnapshot = null;
+        fileTreeView = null;
 
         populateTable(fileTree) {
             this.fileTree = fileTree;
+            this.fileTreeView = new window.qBittorrent.FileTreeView(fileTree);
             const root = fileTree.getRoot();
             root.children.forEach((node) => {
                 this.#addNodeToTable(node, 0);
@@ -2178,8 +2179,46 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.updateTable(true);
         }
 
+        isFolderCollapsed(rowId) {
+            const node = this.getNode(rowId);
+            if (node.isFolder) {
+                return this.fileTreeView.isCollapsed(node.rowId)
+            }
+            return false;
+        }
+
+        collapseFolder(rowId) {
+            const node = this.getNode(rowId);
+            if (node.isFolder) {
+                this.fileTreeView.collapse(node.rowId);
+                this.updateTable();
+            }
+        }
+
+        expandFolder(rowId) {
+            const node = this.getNode(rowId);
+            if (node.isFolder) {
+                this.fileTreeView.expand(node.rowId);
+                this.updateTable();
+            }
+        }
+
+        expandAllFolders() {
+            this.fileTreeView.expandAll();
+            this.updateTable();
+        }
+
+        collapseAllFolders() {
+            this.fileTreeView.collapseAll();
+            this.updateTable();
+        }
+
+        updateRowData() {
+            throw new Error("You must pass a new file tree");
+        }
+
         #addNodeToTable(node, depth) {
-            this.updateRowData({
+            super.updateRowData({
                 rowId: node.rowId,
             });
 
@@ -2207,6 +2246,9 @@ window.qBittorrent.DynamicTable ??= (() => {
          * @param {Map|null} diffMap the diff of changes made to the file tree since the last render. when null, diff is computed automatically.
          */
         updateTable(fullUpdate = false, diffMap = null) {
+            if (!this.fileTree)
+                return;
+
             if (fullUpdate)
                 this.fileTreeRootSnapshot = null;
 
@@ -2214,11 +2256,16 @@ window.qBittorrent.DynamicTable ??= (() => {
                 if (diffMap === null)
                     diffMap = window.qBittorrent.FileTree.FileTree.CompareTrees(this.fileTree.root, this.fileTreeRootSnapshot);
 
+                for (const rowId of this.fileTreeView.render()) {
+                    // re-render the column's 'name', which holds the collapse icon
+                    const row = this.rows.get(rowId);
+                    row.data["name"] = true;
+                }
+
                 for (const [rowId, changedColumns] of diffMap.entries()) {
                     const row = this.rows.get(rowId);
                     for (const column of changedColumns)
-                        // we need to set _some_ value so updateRow() knows to re-render it.
-                        // but what value we set doesn't matter - the value to render will be read from the file tree node
+                        // re-render this column. the rendered value will be read from the file tree node
                         row.data[column] = true;
                 }
             }
@@ -2237,6 +2284,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.fileTree?.clear();
             this.fileTree = null;
             this.fileTreeRootSnapshot = null;
+            this.fileTreeView = null;
             super.clear();
         }
 
@@ -2295,6 +2343,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 const value = node.name;
 
                 if (node.isFolder) {
+                    const isCollapsed = that.fileTreeView.isCollapsed(id);
                     const collapseIconId = "filesTableCollapseIcon" + id;
                     const dirImgId = "filesTableDirImg" + id;
                     if ($(dirImgId)) {
@@ -2323,6 +2372,8 @@ window.qBittorrent.DynamicTable ??= (() => {
 
                         td.replaceChildren(collapseIcon, dirImg, span);
                     }
+
+                    document.getElementById(collapseIconId).classList.toggle("rotate", isCollapsed);
                 }
                 else {
                     const span = document.createElement("span");
@@ -2428,7 +2479,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         _filterNodes(node, filterTerms, filteredRows) {
-            if (node.isFolder) {
+            if (node.isFolder && !this.fileTreeView.isCollapsed(node.rowId)) {
                 const childAdded = node.children.reduce((acc, child) => {
                     // we must execute the function before ORing w/ acc or we'll stop checking child nodes after the first successful match
                     return (this._filterNodes(child, filterTerms, filteredRows) || acc);
@@ -2465,7 +2516,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             const generateRowsSignature = () => {
                 const rowsData = [];
                 for (const { rowId } of this.getRowValues())
-                    rowsData.push(this.getNode(rowId).serialize());
+                    rowsData.push({ ...this.getNode(rowId).serialize(), isCollapsed: this.fileTreeView.isCollapsed(rowId) });
                 return JSON.stringify(rowsData);
             };
 
@@ -2518,11 +2569,11 @@ window.qBittorrent.DynamicTable ??= (() => {
                 switch (e.key) {
                     case "ArrowLeft":
                         e.preventDefault();
-                        window.qBittorrent.TorrentContent.collapseFolder(this.getSelectedRowId());
+                        this.collapseFolder(this.getSelectedRowId());
                         break;
                     case "ArrowRight":
                         e.preventDefault();
-                        window.qBittorrent.TorrentContent.expandFolder(this.getSelectedRowId());
+                        this.expandFolder(this.getSelectedRowId());
                         break;
                 }
             });

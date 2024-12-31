@@ -45,7 +45,6 @@ window.qBittorrent.TorrentContent ??= (() => {
             collapseIconClicked: collapseIconClicked,
             expandFolder: expandFolder,
             collapseFolder: collapseFolder,
-            collapseAllFolders: collapseAllFolders,
             clearFilterInputTimer: clearFilterInputTimer
         };
     };
@@ -331,7 +330,7 @@ window.qBittorrent.TorrentContent ??= (() => {
         let diffMap = null;
         try {
             diffMap = window.qBittorrent.FileTree.FileTree.CompareTrees(torrentFilesTable?.fileTree?.root ?? null, newTree.root);
-        } catch  (error) {
+        } catch (error) {
             if (!(error instanceof window.qBittorrent.FileTree.IncompatibleDiffError))
                 throw error;
         }
@@ -427,24 +426,24 @@ window.qBittorrent.TorrentContent ??= (() => {
         return new window.qBittorrent.FileTree.FileTree(rootNode);
     };
 
-    const collapseIconClicked = (event) => {
-        const id = event.dataset.id;
+    const collapseIconClicked = (element) => {
+        const id = element.dataset.id;
         const node = torrentFilesTable.getNode(id);
-        const isCollapsed = (event.parentElement.dataset.collapsed === "true");
 
-        FileTreeView.CollapseNode(node, !isCollapsed);
+        if (torrentFilesTable.isFolderCollapsed(node.rowId))
+            torrentFilesTable.expandFolder(node.rowId);
+        else
+            torrentFilesTable.collapseFolder(node.rowId);
+
+        torrentFilesTable.updateTable();
     };
 
     const expandFolder = (id) => {
-        const node = torrentFilesTable.getNode(id);
-        if (node.isFolder)
-            FileTreeView.CollapseNode(node, false);
+        torrentFilesTable.expandFolder(id);
     };
 
     const collapseFolder = (id) => {
-        const node = torrentFilesTable.getNode(id);
-        if (node.isFolder)
-            FileTreeView.CollapseNode(node, true);
+        torrentFilesTable.collapseFolder(id);
     };
 
     const filesPriorityMenuClicked = (priority) => {
@@ -593,12 +592,12 @@ window.qBittorrent.TorrentContent ??= (() => {
             torrentFilesFilterInputTimer = setTimeout(() => {
                 torrentFilesFilterInputTimer = -1;
 
-                torrentFilesTable.updateTable(true);
+                torrentFilesTable.updateTable();
 
                 if (value.trim() === "")
-                    collapseAllFolders();
+                    torrentFilesTable.collapseAllFolders();
                 else
-                    expandAllFolders();
+                    torrentFilesTable.expandAllFolders();
             }, window.qBittorrent.Misc.FILTER_INPUT_DELAY);
         });
 
@@ -610,129 +609,61 @@ window.qBittorrent.TorrentContent ??= (() => {
         torrentFilesFilterInputTimer = -1;
     };
 
-    const expandAllFolders = () => {
-        const root = torrentFilesTable.getRoot();
-        root.children.forEach((node) => {
-            node.children.forEach((child) => {
-                FileTreeView.CollapseAllNodes(child, false);
-            });
-        });
-    };
-
-    const collapseAllFolders = () => {
-        const root = torrentFilesTable.getRoot();
-        root.children.forEach((node) => {
-            node.children.forEach((child) => {
-                FileTreeView.CollapseAllNodes(child, true);
-            });
-        });
-    };
-
     return exports();
 })();
 Object.freeze(window.qBittorrent.TorrentContent);
 
 class FileTreeView {
-    static #GetNodeTd(rowId) {
-        // element won't exist if row has been filtered out
-        return document.getElementById(`filesTablefileName${rowId}`)?.parentElement ?? null;
+    defaultState = false;
+    #renderedState = new Map()
+    #state = new Map()
+
+    constructor(fileTree) {
+        fileTree.toArray().filter(node => node.isFolder).forEach(node => {
+            this.#state.set(node.rowId, { depth: node.depth, collapsed: this.defaultState });
+        });
     }
 
-    /**
-     * @param {FileNode|FolderNode} node
-     */
-    static #HideNode(node) {
-        const td = this.#GetNodeTd(node.rowId);
-        if (td !== null) {
-            const tr = td.parentElement;
-            tr.classList.add("invisible");
+    isCollapsed(id) {
+        return this.#state.get(id)?.collapsed ?? this.defaultState;
+    }
+
+    collapse(id) {
+        if (this.#state.has(id)) {
+            const state = this.#state.get(id);
+            state.collapsed = true;
         }
     }
 
-    /**
-     * @param {FileNode|FolderNode} node
-     */
-    static #ShowNode(node) {
-        const td = this.#GetNodeTd(node.rowId);
-        if (td !== null) {
-            const tr = td.parentElement;
-            tr.classList.remove("invisible");
+    expand(id) {
+        if (this.#state.has(id)) {
+            const state = this.#state.get(id);
+            state.collapsed = false;
         }
     }
 
-    static #RecursiveHideNode(node) {
-        this.#HideNode(node);
-        node.children.forEach(child => this.#RecursiveHideNode(child));
-    }
-
-    static #RecursiveShowNode(node) {
-        this.#ShowNode(node);
-        // only show children if parent folder is expanded (i.e. not collapsed)
-        if (!this.IsNodeCollapsed(node))
-            node.children.forEach(child => this.#RecursiveShowNode(child));
-    }
-
-    /**
-     * @param {FileNode|FolderNode} node
-     * @param {boolean} isCollapsed
-     */
-    static UpdateNodeDisplay(node, isCollapsed) {
-        const td = this.#GetNodeTd(node.rowId);
-        if (td !== null) {
-            // store collapsed state
-            td.dataset.collapsed = isCollapsed;
-
-            // rotate the collapse icon
-            const collapseIcon = td.childNodes[0];
-            if (isCollapsed)
-                collapseIcon.classList.add("rotate");
-            else
-                collapseIcon.classList.remove("rotate");
+    collapseAll(depth = 1) {
+        for (const key of this.#state.keys()) {
+            if (this.#state.has(key)) {
+                const state = this.#state.get(key);
+                if (state.depth >= depth) {
+                    state.collapsed = true;
+                }
+            }
         }
     }
 
-    /**
-     * @param {FileNode|FolderNode} node
-     * @returns {boolean}
-     */
-    static IsNodeCollapsed(node) {
-        const td = this.#GetNodeTd(node.rowId);
-        return (td === null) ? true : td.dataset.collapsed === "true";
+    expandAll() {
+        for (const key of this.#state.keys())
+            this.expand(key)
     }
 
-    /**
-     * @param {FileNode|FolderNode} node
-     * @param {boolean} shouldCollapse
-     */
-    static CollapseNode(node, shouldCollapse) {
-        if (node.isFolder) {
-            this.UpdateNodeDisplay(node, shouldCollapse);
-
-            node.children.forEach((child) => {
-                if (shouldCollapse)
-                    this.#RecursiveHideNode(child);
-                else
-                    this.#RecursiveShowNode(child);
-            });
-        }
+    render() {
+        const unrendered = [...this.#state.entries()].filter(([key, value]) => this.#renderedState.get(key) !== value).map(([key]) => key);
+        // make deep copy of map
+        this.#renderedState = new Map(JSON.parse(JSON.stringify(Array.from(this.#state))));
+        return unrendered;
     }
-
-    /**
-     * Collapses/expands a folder and all of its children, recursively
-     * @param {FileNode|FolderNode} node
-     * @param {boolean} shouldCollapse
-     */
-    static CollapseAllNodes(node, shouldCollapse) {
-        if (node.isFolder) {
-            this.UpdateNodeDisplay(node, shouldCollapse);
-
-            node.children.forEach((child) => {
-                if (shouldCollapse)
-                    this.#HideNode(child);
-                else
-                    this.#ShowNode(child);
-                this.CollapseAllNodes(child, shouldCollapse);
-            });
-        }
-    };
 }
+window.qBittorrent.FileTreeView = FileTreeView;
+Object.freeze(window.qBittorrent.FileTreeView);
