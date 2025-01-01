@@ -84,7 +84,7 @@ window.qBittorrent.FileTree ??= (() => {
                 throw new IncompatibleDiffError(`node cannot be null`);
             if (nodeA.rowId !== nodeB.rowId)
                 throw new IncompatibleDiffError(`Row ids ${nodeA.rowId} and ${nodeB.rowId} do not match`);
-            if ((nodeA.root === null) !== (nodeB.root === null))
+            if (nodeA.isRoot() !== nodeB.isRoot())
                 throw new IncompatibleDiffError(`Row id ${nodeA.rowId} is root in one tree but not other`);
             if (nodeA.fileId !== nodeB.fileId)
                 throw new IncompatibleDiffError(`Row id ${nodeA.rowId} does not have same file id in both trees`);
@@ -95,8 +95,7 @@ window.qBittorrent.FileTree ??= (() => {
             if (nodeA.children.length !== nodeB.children.length)
                 throw new IncompatibleDiffError(`Row id ${nodeA.rowId} does not have same number of children in both trees`);
 
-            const isRoot = nodeA.root === null;
-            if (!isRoot) {
+            if (!nodeA.isRoot()) {
                 const nodeASerialized = nodeA.serialize();
                 const nodeBSerialized = nodeB.serialize();
                 const changedColumns = [];
@@ -216,6 +215,10 @@ window.qBittorrent.FileTree ??= (() => {
         isFolder = false;
         /** @type (FileNode | FolderNode)[] */
         children = [];
+
+        isRoot() {
+            return this.root === null;
+        }
 
         isIgnored() {
             return this.priority === FilePriority.Ignored;
