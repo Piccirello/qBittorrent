@@ -4,7 +4,7 @@
     v 0.4
 
 **************************************************************/
-.altRowColors tbody tr:nth-child(odd of :not(.invisible)) {
+.altRowColors tbody tr:nth-child(odd of :not(.invisible):not(.spacer)) {
     background-color: var(--color-background-default);
 }
 
@@ -12,7 +12,11 @@
     padding: 3px 2px;
 }
 
-.dynamicTableDiv table.dynamicTable tbody tr.selected {
+#torrentsTableDiv .dynamicTable {
+    width: 100%;
+}
+
+.dynamicTableDiv table.dynamicTable tbody tr:not(.spacer).selected {
     background-color: var(--color-background-blue);
     color: var(--color-text-white);
 }
