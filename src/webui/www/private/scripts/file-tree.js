@@ -319,9 +319,9 @@ window.qBittorrent.FileTree ??= (() => {
             this.size = size;
             this.remaining = remaining;
             this.checked = this.autoCalculateCheckedState ? checked : TriState.Checked;
-            this.progress = (progress / size);
+            this.progress = (size > 0) ? (progress / size) : 0;
             this.priority = priority;
-            this.availability = (availability / size);
+            this.availability = (size > 0) ? (availability / size) : 0;
         }
 
         clone() {
