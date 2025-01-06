@@ -73,9 +73,9 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.dynamicTableDivId = dynamicTableDivId;
             this.dynamicTableFixedHeaderDivId = dynamicTableFixedHeaderDivId;
             this.dynamicTableDiv = document.getElementById(dynamicTableDivId);
-            this.fixedTableHeader = $(dynamicTableFixedHeaderDivId).getElements("tr")[0];
-            this.hiddenTableHeader = $(dynamicTableDivId).getElements("tr")[0];
-            this.tableBody = $(dynamicTableDivId).getElements("tbody")[0];
+            this.fixedTableHeader = document.getElementById(dynamicTableFixedHeaderDivId).querySelector("tr");
+            this.hiddenTableHeader = this.dynamicTableDiv.querySelector("tr");
+            this.tableBody = this.dynamicTableDiv.querySelector("tbody");
             this.rows = new Map();
             this.selectedRows = [];
             this.columns = [];
@@ -374,13 +374,13 @@ window.qBittorrent.DynamicTable ??= (() => {
 
         _calculateColumnBodyWidth(column) {
             const columnIndex = this.getColumnPos(column.name);
-            const bodyColumn = document.getElementById(this.dynamicTableDivId).querySelectorAll("tr>th")[columnIndex];
+            const bodyColumn = this.dynamicTableDiv.querySelectorAll("tr>th")[columnIndex];
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
             context.font = window.getComputedStyle(bodyColumn, null).getPropertyValue("font");
 
             const longestTd = { value: "", width: 0 };
-            for (const tr of this.tableBody.querySelectorAll("tr")) {
+            for (const tr of this.getTrs()) {
                 const tds = tr.querySelectorAll("td");
                 const td = tds[columnIndex];
 
@@ -696,7 +696,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         setupAltRow() {
             const useAltRowColors = (LocalPreferences.get("use_alt_row_colors", "true") === "true");
             if (useAltRowColors)
-                document.getElementById(this.dynamicTableDivId).classList.add("altRowColors");
+                this.dynamicTableDiv.classList.add("altRowColors");
         }
 
         selectAll() {
@@ -786,6 +786,10 @@ window.qBittorrent.DynamicTable ??= (() => {
                     continue;
                 row["full_data"][x] = data[x];
             }
+        }
+
+        getTrs() {
+            return [...this.tableBody.querySelectorAll("tr")];
         }
 
         getRow(rowId) {
