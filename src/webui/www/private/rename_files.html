@@ -339,7 +339,7 @@
                         if (folderNode === null) {
                             folderNode = new window.qBittorrent.FileTree.FolderNode();
                             folderNode.autoCalculateCheckedState = false;
-                            folderNode.rowId = rowId;
+                            folderNode.rowId = rowId.toString();
                             folderNode.path = (parent.path === "")
                                 ? folderName
                                 : [parent.path, folderName].join(window.qBittorrent.Filesystem.PathSeparator);
@@ -356,7 +356,7 @@
                     });
 
                     const childNode = new window.qBittorrent.FileTree.FileNode();
-                    childNode.rowId = rowId;
+                    childNode.rowId = rowId.toString();
                     childNode.path = row.path;
                     childNode.checked = selectedRows.includes(rowId.toString()) ? 0 : 1;
                     childNode.original = row.original;

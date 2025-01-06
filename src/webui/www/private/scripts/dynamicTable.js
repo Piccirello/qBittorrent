@@ -68,6 +68,10 @@ window.qBittorrent.DynamicTable ??= (() => {
     let progressColumnWidth = -1;
 
     class DynamicTable {
+        rows = new Map();
+        rowHeight = 26;
+        enableVirtualRows = true;
+        virtualRowBuffer = 20;
 
         setup(dynamicTableDivId, dynamicTableFixedHeaderDivId, contextMenu) {
             this.dynamicTableDivId = dynamicTableDivId;
@@ -76,7 +80,6 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.fixedTableHeader = document.getElementById(dynamicTableFixedHeaderDivId).querySelector("tr");
             this.hiddenTableHeader = this.dynamicTableDiv.querySelector("tr");
             this.tableBody = this.dynamicTableDiv.querySelector("tbody");
-            this.rows = new Map();
             this.selectedRows = [];
             this.columns = [];
             this.contextMenu = contextMenu;
@@ -90,14 +93,40 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.setupHeaderMenu();
             this.setSortedColumnIcon(this.sortedColumn, null, (this.reverseSort === "1"));
             this.setupAltRow();
+            this.#setupVirtualTable();
+        }
+
+        #setupVirtualTable() {
+            if (!this.enableVirtualRows)
+                return;
+
+            let prevHeight = this.dynamicTableDiv.getBoundingClientRect().height;
+            const debouncedHeightCheck = window.qBittorrent.Misc.createDebounceHandler(100, () => {
+                const height = this.dynamicTableDiv.getBoundingClientRect().height;
+                // if we need fewer rows, we can wait to clean them up on the next scroll event
+                const mustRenderMoreRows = height > prevHeight;
+                if (mustRenderMoreRows)
+                    this.updateTable();
+
+                prevHeight = height;
+            });
+
+            new ResizeObserver(debouncedHeightCheck).observe(this.dynamicTableDiv);
         }
 
         setupCommonEvents() {
             const tableFixedHeaderDiv = $(this.dynamicTableFixedHeaderDivId);
 
+            let scrollTimer = -1;
             const tableElement = tableFixedHeaderDiv.querySelector("table");
-            this.dynamicTableDiv.addEventListener("scroll", function() {
-                tableElement.style.left = `${-this.scrollLeft}px`;
+            this.dynamicTableDiv.addEventListener("scroll", () => {
+                tableElement.style.left = `${-this.dynamicTableDiv.scrollLeft}px`;
+
+                clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(() => {
+                    scrollTimer = -1;
+                    this.updateTable();
+                }, 100);
             });
 
             this.dynamicTableDiv.addEventListener("click", (e) => {
@@ -417,7 +446,11 @@ window.qBittorrent.DynamicTable ??= (() => {
                 width = Math.max(headTextWidth, bodyTextWidth);
             }
 
+            const columnIndex = this.getColumnPos(columnName);
+            const th = this.getTrs()[columnIndex];
+
             column.width = width;
+            th.style.width = width + "px";
             this.updateColumn(column.name);
             this.saveColumnWidth(column.name);
         }
@@ -598,6 +631,8 @@ window.qBittorrent.DynamicTable ??= (() => {
                 th.textContent = this.columns[i].caption;
                 th.setAttribute("style", "width: " + this.columns[i].width + "px;" + this.columns[i].style);
                 th.columnName = this.columns[i].name;
+                th.width = this.columns[i].width;
+                th.style.width = this.columns[i].width + "px;";
                 th.classList.add("column_" + th.columnName);
                 th.classList.toggle("invisible", ((this.columns[i].visible === "0") || this.columns[i].force_hide));
             }
@@ -700,8 +735,6 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         selectAll() {
-            this.deselectAll();
-
             const trs = this.tableBody.getElements("tr");
             for (let i = 0; i < trs.length; ++i) {
                 const tr = trs[i];
@@ -815,13 +848,67 @@ window.qBittorrent.DynamicTable ??= (() => {
             return filteredRows;
         }
 
-        getTrByRowId(rowId) {
-            const trs = this.tableBody.getElements("tr");
-            for (let i = 0; i < trs.length; ++i) {
-                if (trs[i].rowId === rowId)
-                    return trs[i];
+        #getRowsToRender(totalRows) {
+            let startIndex = 0;
+            let endIndex = totalRows - 1;
+            if (this.enableVirtualRows) {
+                const scrollTop = this.dynamicTableDiv.scrollTop;
+                const viewportHeight = this.dynamicTableDiv.clientHeight;
+
+                const numVisibleRows = Math.ceil((scrollTop + viewportHeight) / this.rowHeight);
+                endIndex = Math.min(totalRows - 1, numVisibleRows + this.virtualRowBuffer);
+
+                const numRowsBefore = Math.floor(scrollTop / this.rowHeight);
+                startIndex = Math.max(0, numRowsBefore - this.virtualRowBuffer);
+                // ensure odd rows remain odd and even rows remain even.
+                // otherwise the row's background color may change as we scroll
+                if ((startIndex % 2) === 1)
+                    startIndex = Math.max(0, startIndex - 1);
             }
-            return null;
+
+            return { startIndex, endIndex };
+        }
+
+        /**
+         * Manage table spacer rows for accurate scrolling
+         */
+        #updateVirtualTable(totalRows, startIndex, endIndex) {
+            let topSpacerRow = null;
+            let bottomSpacerRow = null;
+            if (this.enableVirtualRows) {
+                topSpacerRow = this.tableBody.querySelector("div.top-spacer");
+                const isUnrenderedRowsBefore = startIndex > 0;
+                if (isUnrenderedRowsBefore) {
+                    // create top spacer row
+                    if (topSpacerRow === null) {
+                        topSpacerRow = document.createElement("div");
+                        topSpacerRow.classList.add("spacer", "top-spacer");
+                        this.tableBody.insertBefore(topSpacerRow, this.tableBody?.querySelector("tr") ?? null);
+                    }
+                    topSpacerRow.style.height = `${startIndex * this.rowHeight}px`;
+                }
+                else {
+                    topSpacerRow?.remove();
+                    topSpacerRow = null;
+                }
+
+                bottomSpacerRow = this.tableBody.querySelector("div.bottom-spacer");
+                const isUnrenderedRowsAfter = (totalRows - 1) > endIndex;
+                if (isUnrenderedRowsAfter) {
+                    // create bottom spacer row
+                    if (bottomSpacerRow === null) {
+                        bottomSpacerRow = document.createElement("div");
+                        bottomSpacerRow.classList.add("spacer", "bottom-spacer");
+                        this.tableBody.appendChild(bottomSpacerRow);
+                    }
+                    bottomSpacerRow.style.height = `${(totalRows - endIndex - 1) * this.rowHeight}px`;
+                }
+                else {
+                    bottomSpacerRow?.remove();
+                    bottomSpacerRow = null;
+                }
+            }
+            return { topSpacerRow, bottomSpacerRow };
         }
 
         updateTable(fullUpdate = false) {
@@ -835,17 +922,26 @@ window.qBittorrent.DynamicTable ??= (() => {
                 }
             }
 
-            const trs = [...this.tableBody.querySelectorAll("tr")];
+            const trs = this.getTrs();
+            /** @type {Map<string, HTMLTableRowElement>} */
             const trMap = new Map(trs.map(tr => [tr.rowId, tr]));
 
-            for (let rowPos = 0; rowPos < rows.length; ++rowPos) {
-                const rowId = rows[rowPos]["rowId"];
+            this.tableBody.style.height = `${rows.length * this.rowHeight}px`;
+
+            const { startIndex, endIndex } = this.#getRowsToRender(rows.length);
+            const { bottomSpacerRow } = this.#updateVirtualTable(rows.length, startIndex, endIndex);
+
+            for (let i = startIndex; i <= endIndex; ++i) {
+                const { rowId } = rows[i];
                 const existingTr = trMap.get(rowId);
                 if (existingTr !== undefined) {
+                    existingTr.style.top = `${i * this.rowHeight}px`;
                     this.updateRow(existingTr, fullUpdate);
                 }
                 else {
                     const tr = document.createElement("tr");
+                    tr.style.height = `${this.rowHeight}px`;
+                    tr.style.top = `${i * this.rowHeight}px`;
                     // set tabindex so element receives keydown events
                     // more info: https://developer.mozilla.org/en-US/docs/Web/API/Element/keydown_event
                     tr.tabIndex = -1;
@@ -857,41 +953,52 @@ window.qBittorrent.DynamicTable ??= (() => {
                         const td = document.createElement("td");
                         if ((this.columns[k].visible === "0") || this.columns[k].force_hide)
                             td.classList.add("invisible");
+                        td.style.width = this.columns[k].width + "px;";
                         tr.append(td);
                     }
 
                     // add to end of table - we'll move into the proper order later
-                    this.tableBody.appendChild(tr);
+                    if (bottomSpacerRow)
+                        this.tableBody.insertBefore(tr, bottomSpacerRow);
+                    else
+                        this.tableBody.appendChild(tr);
+
                     trMap.set(rowId, tr);
 
-                    // Update context menu
                     this.contextMenu?.addTarget(tr);
-
                     this.updateRow(tr, true);
                 }
             }
 
             // reorder table rows
             let prevTr = null;
-            for (let rowPos = 0; rowPos < rows.length; ++rowPos) {
-                const { rowId } = rows[rowPos];
+            for (let i = startIndex; i <= endIndex; ++i) {
+                const { rowId } = rows[i];
                 const tr = trMap.get(rowId);
 
-                const trInCorrectLocation = rowId === trs[rowPos]?.rowId;
+                const trInCorrectLocation = rowId === trs[i]?.rowId;
                 if (!trInCorrectLocation) {
                     // move row into correct location
                     if (prevTr === null)
                         // insert as first row in table
-                        this.tableBody.insertBefore(tr, trs[0]);
+                        this.tableBody.insertBefore(tr, this.tableBody.querySelector("tr") ?? this.tableBody.querySelector("div.bottom-spacer"));
                     else
                         prevTr.after(tr);
                 }
                 prevTr = tr;
             }
 
-            const rowPos = rows.length;
-            while ((rowPos < trs.length) && (trs.length > 0))
-                trs.pop().destroy();
+            const rowIdsInTable = new Set();
+            for (let i = startIndex; i <= endIndex; ++i)
+                rowIdsInTable.add(rows[i].rowId);
+
+            // remove rows that are no longer visible
+            for (const [rowId, tr] of trMap.entries()) {
+                if (!rowIdsInTable.has(rowId)) {
+                    this.tableBody.removeChild(tr);
+                    trMap.delete(rowId);
+                }
+            }
         }
 
         updateRow(tr, fullUpdate) {
@@ -909,7 +1016,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         removeRow(rowId) {
             this.selectedRows.erase(rowId);
             this.rows.delete(rowId);
-            const tr = this.getTrByRowId(rowId);
+            const tr = this.getTrs().find(tr => (tr.rowId === rowId));
             tr?.destroy();
         }
 
@@ -942,7 +1049,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         selectNextRow() {
-            const visibleRows = $(this.dynamicTableDivId).getElements("tbody tr").filter(e => e.style.display !== "none");
+            const visibleRows = this.getTrs().filter(e => (e.style.display !== "none") && !e.hasClass("invisible"));
             const selectedRowId = this.getSelectedRowId();
 
             let selectedIndex = -1;
@@ -964,7 +1071,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         selectPreviousRow() {
-            const visibleRows = $(this.dynamicTableDivId).getElements("tbody tr").filter(e => e.style.display !== "none");
+            const visibleRows = this.getTrs().filter(e => (e.style.display !== "none") && !e.hasClass("invisible"));
             const selectedRowId = this.getSelectedRowId();
 
             let selectedIndex = -1;
@@ -987,6 +1094,8 @@ window.qBittorrent.DynamicTable ??= (() => {
     }
 
     class TorrentsTable extends DynamicTable {
+        rowHeight = 24;
+
         initColumns() {
             this.newColumn("priority", "", "#", 30, true);
             this.newColumn("state_icon", "cursor: default", "", 22, true);
@@ -2047,6 +2156,8 @@ window.qBittorrent.DynamicTable ??= (() => {
     }
 
     class TorrentFilesTable extends DynamicTable {
+        rowHeight = 29;
+        enableVirtualRows = false;
         #IdentifierColumn = "name";
         filterTerms = [];
         prevFilterTerms = [];
@@ -2117,9 +2228,9 @@ window.qBittorrent.DynamicTable ??= (() => {
             this.fileTreeRootSnapshot = this.fileTree.clone();
 
             // clear stale data from any rows that weren't rendered
-            for (const row of this.rows.values()) {
+            for (const row of this.rows.values())
                 row.data = {};
-            }
+
         }
 
         clear() {
@@ -2136,9 +2247,9 @@ window.qBittorrent.DynamicTable ??= (() => {
 
             const tds = tr.getElements("td");
             for (let i = 0; i < this.columns.length; ++i) {
-                if (Object.hasOwn(data, this.columns[i].dataProperties[0])) {
+                if (Object.hasOwn(data, this.columns[i].dataProperties[0]))
                     this.columns[i].updateTd(tds[i], row);
-                }
+
             }
             row.data = {};
         }
@@ -2427,6 +2538,8 @@ window.qBittorrent.DynamicTable ??= (() => {
     }
 
     class BulkRenameTorrentFilesTable extends DynamicTable {
+        rowHeight = 29;
+        enableVirtualRows = false;
         filterTerms = [];
         prevFilterTerms = [];
         prevRowsString = null;
@@ -2814,6 +2927,8 @@ window.qBittorrent.DynamicTable ??= (() => {
     }
 
     class RssFeedTable extends DynamicTable {
+        rowHeight = 35;
+
         initColumns() {
             this.newColumn("state_icon", "", "", 30, true);
             this.newColumn("name", "", "QBT_TR(RSS feeds)QBT_TR[CONTEXT=FeedListWidget]", -1, true);
