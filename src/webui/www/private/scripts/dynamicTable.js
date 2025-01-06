@@ -664,7 +664,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         setSortedColumnIcon(newColumn, oldColumn, isReverse) {
-            const getCol = function(headerDivId, colName) {
+            const getCol = (headerDivId, colName) => {
                 const colElem = $$("#" + headerDivId + " .column_" + colName);
                 if (colElem.length === 1)
                     return colElem[0];
@@ -1853,7 +1853,7 @@ window.qBittorrent.DynamicTable ??= (() => {
         }
 
         getFilteredAndSortedRows() {
-            const getSizeFilters = function() {
+            const getSizeFilters = () => {
                 let minSize = (window.qBittorrent.Search.searchSizeFilter.min > 0.00) ? (window.qBittorrent.Search.searchSizeFilter.min * Math.pow(1024, window.qBittorrent.Search.searchSizeFilter.minUnit)) : 0.00;
                 let maxSize = (window.qBittorrent.Search.searchSizeFilter.max > 0.00) ? (window.qBittorrent.Search.searchSizeFilter.max * Math.pow(1024, window.qBittorrent.Search.searchSizeFilter.maxUnit)) : 0.00;
 
@@ -2159,7 +2159,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             const that = this;
 
             // checked
-            this.columns["checked"].updateTd = function(td, row) {
+            this.columns["checked"].updateTd = (td, row) => {
                 const id = row.rowId;
                 const node = that.getNode(id);
                 const value = node.checked;
@@ -2229,7 +2229,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             };
 
             // size
-            this.columns["size"].updateTd = function(td, row) {
+            this.columns["size"].updateTd = (td, row) => {
                 const node = that.getNode(row.rowId);
                 const size = window.qBittorrent.Misc.friendlyUnit(node.size, false);
                 td.textContent = size;
@@ -2238,7 +2238,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
             // progress
             if (this.columns["progress"]) {
-                this.columns["progress"].updateTd = function(td, row) {
+                this.columns["progress"].updateTd = (td, row) => {
                     const id = row.rowId;
                     const node = that.getNode(id);
                     const value = node.progress;
@@ -2258,7 +2258,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             }
 
             // priority
-            this.columns["priority"].updateTd = function(td, row) {
+            this.columns["priority"].updateTd = (td, row) => {
                 const id = row.rowId;
                 const node = that.getNode(id);
                 const value = node.priority;
@@ -2272,7 +2272,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
             // remaining, availability
             if (this.columns["remaining"]) {
-                this.columns["remaining"].updateTd = function(td, row) {
+                this.columns["remaining"].updateTd = (td, row) => {
                     const node = that.getNode(row.rowId);
                     const remaining = window.qBittorrent.Misc.friendlyUnit(node.remaining, false);
                     td.textContent = remaining;
@@ -2280,7 +2280,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 };
             }
             if (this.columns["availability"]) {
-                this.columns["availability"].updateTd = function(td, row) {
+                this.columns["availability"].updateTd = (td, row) => {
                     const node = that.getNode(row.rowId);
                     const value = window.qBittorrent.Misc.friendlyPercentage(node.availability);
                     td.textContent = value;
