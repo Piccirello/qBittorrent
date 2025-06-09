@@ -2188,7 +2188,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
         populateTable(root) {
             this.fileTree.setRoot(root);
-            root.children.each((node) => {
+            root.children.forEach((node) => {
                 this.#addNodeToTable(node, 0, root);
             });
         }
@@ -2201,7 +2201,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 rowId: node.rowId
             });
 
-            node.children.each((child) => {
+            node.children.forEach((child) => {
                 this.#addNodeToTable(child, depth + 1, node);
             });
         }
@@ -2702,7 +2702,7 @@ window.qBittorrent.DynamicTable ??= (() => {
 
         populateTable(root) {
             this.fileTree.setRoot(root);
-            root.children.each((node) => {
+            root.children.forEach((node) => {
                 this.#addNodeToTable(node, 0, root);
             });
         }
@@ -2718,7 +2718,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 rowId: node.rowId,
             });
 
-            node.children.each((child) => {
+            node.children.forEach((child) => {
                 this.#addNodeToTable(child, depth + 1, node);
             });
         }
