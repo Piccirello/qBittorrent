@@ -113,8 +113,8 @@ window.qBittorrent.TorrentContent ??= (() => {
 
         const checkbox = e.target;
         const priority = checkbox.checked ? FilePriority.Normal : FilePriority.Ignored;
-        const id = checkbox.getAttribute("data-id");
-        const fileId = Number(checkbox.getAttribute("data-file-id"));
+        const id = checkbox.dataset.id;
+        const fileId = Number(checkbox.dataset.fileId);
 
         const rows = getAllChildren(id, fileId);
 
@@ -125,8 +125,8 @@ window.qBittorrent.TorrentContent ??= (() => {
     const fileComboboxChanged = (e) => {
         const combobox = e.target;
         const priority = combobox.value;
-        const id = combobox.getAttribute("data-id");
-        const fileId = Number(combobox.getAttribute("data-file-id"));
+        const id = combobox.dataset.id;
+        const fileId = Number(combobox.dataset.fileId);
 
         const rows = getAllChildren(id, fileId);
 
