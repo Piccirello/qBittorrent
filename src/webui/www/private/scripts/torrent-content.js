@@ -293,15 +293,15 @@ window.qBittorrent.TorrentContent ??= (() => {
         if (onFilePriorityChanged)
             onFilePriorityChanged(fileIds, priority);
 
-        const ignore = (priority === FilePriority.Ignored);
-        ids.forEach((_id) => {
-            _id = _id.toString();
-            torrentFilesTable.setIgnored(_id, ignore);
-
-            const node = torrentFilesTable.getNode(_id);
+        const nodes = [];
+        for (const id of ids) {
+            const node = torrentFilesTable.getNode(id.toString());
             node.priority = priority;
             node.checked = triStateFromPriority(priority);
-        });
+            nodes.push(node);
+        }
+        for (const node of nodes)
+            node.calculateRemaining();
     };
 
     const updateData = (files) => {
@@ -315,7 +315,6 @@ window.qBittorrent.TorrentContent ??= (() => {
                 size: file.size,
                 progress: window.qBittorrent.Misc.toFixedPointString((file.progress * 100), 1),
                 priority: normalizePriority(file.priority),
-                remaining: (ignore ? 0 : (file.size * (1 - file.progress))),
                 availability: file.availability
             };
 
@@ -369,7 +368,6 @@ window.qBittorrent.TorrentContent ??= (() => {
             });
 
             const isChecked = row.checked ? TriState.Checked : TriState.Unchecked;
-            const remaining = (row.priority === FilePriority.Ignored) ? 0 : row.remaining;
             const childNode = new window.qBittorrent.FileTree.FileNode();
             childNode.name = row.name;
             childNode.path = row.fileName;
@@ -377,7 +375,6 @@ window.qBittorrent.TorrentContent ??= (() => {
             childNode.fileId = row.fileId;
             childNode.size = row.size;
             childNode.checked = isChecked;
-            childNode.remaining = remaining;
             childNode.progress = row.progress;
             childNode.priority = row.priority;
             childNode.availability = row.availability;
@@ -427,6 +424,7 @@ window.qBittorrent.TorrentContent ??= (() => {
         const updateComplete = () => {
             // we've finished recursing
             updateGlobalCheckbox();
+            torrentFilesTable.calculateRemaining();
             torrentFilesTable.updateTable(true);
         };
 
