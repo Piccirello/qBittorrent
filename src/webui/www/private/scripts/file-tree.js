@@ -126,6 +126,17 @@ window.qBittorrent.FileTree ??= (() => {
         isFolder = false;
         children = [];
 
+        isIgnored() {
+            return this.priority === FilePriority.Ignored;
+        }
+
+        calculateRemaining() {
+            if (this.isIgnored())
+                this.remaining = 0;
+            else
+                this.remaining = (this.size * (1.0 - (this.progress / 100)));
+        }
+
         serialize() {
             return {
                 name: this.name,
@@ -150,6 +161,7 @@ window.qBittorrent.FileTree ??= (() => {
         fileId = -1;
 
         addChild(node) {
+            node.calculateRemaining();
             this.children.push(node);
         }
 
@@ -196,8 +208,7 @@ window.qBittorrent.FileTree ??= (() => {
                                 root.checked = TriState.Partial;
                         }
 
-                        const isIgnored = (child.priority === FilePriority.Ignored);
-                        if (!isIgnored) {
+                        if (!child.isIgnored()) {
                             root.remaining += child.remaining;
                             root.progress += (child.progress * child.size);
                             root.availability += (child.availability * child.size);
@@ -211,6 +222,17 @@ window.qBittorrent.FileTree ??= (() => {
 
                 stack.pop();
             }
+        }
+
+        /**
+         * Recursively recalculate the amount of data remaining to be downloaded.
+         * This is useful for updating a folder's "remaining" size as files are unchecked/ignored.
+         */
+        calculateRemaining() {
+            this.remaining = this.children.reduce((sum, node) => {
+                node.calculateRemaining();
+                return sum + node.remaining;
+            }, 0);
         }
     }
 
