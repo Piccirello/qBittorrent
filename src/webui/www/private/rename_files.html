@@ -23,7 +23,7 @@
                 menu: "multiRenameFilesMenu",
                 actions: {
                     ToggleSelection: (element, ref) => {
-                        const rowId = Number(element.getAttribute("data-row-id"));
+                        const rowId = Number(element.dataset.rowId);
                         const row = bulkRenameFilesTable.getNode(rowId);
                         const checkState = (row.checked === 1) ? 0 : 1;
                         bulkRenameFilesTable.toggleNodeTreeCheckbox(rowId, checkState);

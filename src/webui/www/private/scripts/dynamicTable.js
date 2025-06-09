@@ -1067,7 +1067,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             let selectedIndex = -1;
             for (let i = 0; i < visibleRows.length; ++i) {
                 const row = visibleRows[i];
-                if (row.getAttribute("data-row-id") === selectedRowId) {
+                if (row.dataset.rowId === selectedRowId) {
                     selectedIndex = i;
                     break;
                 }
@@ -1078,7 +1078,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 this.deselectAll();
 
                 const newRow = visibleRows[selectedIndex + 1];
-                this.selectRow(newRow.getAttribute("data-row-id"));
+                this.selectRow(newRow.dataset.rowId);
             }
         }
 
@@ -1089,7 +1089,7 @@ window.qBittorrent.DynamicTable ??= (() => {
             let selectedIndex = -1;
             for (let i = 0; i < visibleRows.length; ++i) {
                 const row = visibleRows[i];
-                if (row.getAttribute("data-row-id") === selectedRowId) {
+                if (row.dataset.rowId === selectedRowId) {
                     selectedIndex = i;
                     break;
                 }
@@ -1100,7 +1100,7 @@ window.qBittorrent.DynamicTable ??= (() => {
                 this.deselectAll();
 
                 const newRow = visibleRows[selectedIndex - 1];
-                this.selectRow(newRow.getAttribute("data-row-id"));
+                this.selectRow(newRow.dataset.rowId);
             }
         }
     }
