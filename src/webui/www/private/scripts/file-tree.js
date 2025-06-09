@@ -154,9 +154,9 @@ window.qBittorrent.FileTree ??= (() => {
 
     class FolderNode extends FileNode {
         /**
-         * Will automatically tick the checkbox for a folder if all subfolders and files are also ticked
+         * When true, the folder's `checked` state will be calculately automatically based on its children
          */
-        autoCheckFolders = true;
+        autoCalculateCheckedState = true;
         isFolder = true;
         fileId = -1;
 
@@ -215,7 +215,7 @@ window.qBittorrent.FileTree ??= (() => {
                         }
                     }
 
-                    root.checked = root.autoCheckFolders ? root.checked : TriState.Checked;
+                    root.checked = root.autoCalculateCheckedState ? root.checked : TriState.Checked;
                     root.progress /= root.size;
                     root.availability /= root.size;
                 }
