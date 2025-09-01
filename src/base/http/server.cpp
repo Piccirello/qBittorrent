@@ -131,12 +131,63 @@ void Server::incomingConnection(const qintptr socketDescriptor)
         {
             auto *sslSocket = static_cast<QSslSocket *>(serverSocket.get());
             sslSocket->setSslConfiguration(m_sslConfig);
-            sslSocket->startServerEncryption();
-        }
 
-        auto *connection = new Connection(serverSocket.release(), m_requestHandler, this);
-        m_connections.insert(connection);
-        connect(connection, &Connection::closed, this, [this, connection] { removeConnection(connection); });
+            // redirect plain http requests to https
+            connect(sslSocket, &QIODevice::readyRead, this, [this, serverSocket = serverSocket.release()]() {
+                auto *sslSocket = static_cast<QSslSocket *>(serverSocket);
+                char buf[8];
+                if (sslSocket->peek(buf, sizeof(buf)) >= 4)
+                {
+                    const QByteArray method = QByteArray::fromRawData(buf, 4);
+                    // only handle idempotent requests
+                    if (method == "GET " || method == "HEAD")
+                    {
+                        sslSocket->disconnect();
+
+                        // read request to get Host header
+                        const QByteArray request = sslSocket->readAll();
+                        QString host = sslSocket->localAddress().toString();
+
+                        // Extract Host header
+                        const int hostIndex = request.indexOf("\r\nHost: ");
+                        if (hostIndex >= 0)
+                        {
+                            const int hostStart = hostIndex + 8;
+                            const int hostEnd = request.indexOf("\r\n", hostStart);
+                            if (hostEnd > hostStart)
+                                host = QString::fromLatin1(request.mid(hostStart, hostEnd - hostStart));
+                        }
+
+                        const QString httpsUrl = u"https://%1"_s.arg(host);
+                        const QByteArray response =
+                            "HTTP/1.1 301 Moved Permanently\r\n"
+                            "Location: " + httpsUrl.toLatin1() + "\r\n"
+                            "Content-Length: 0\r\n"
+                            "Connection: close\r\n\r\n";
+                        sslSocket->write(response);
+                        connect(sslSocket, &QTcpSocket::bytesWritten, sslSocket, [sslSocket]() {
+                            if (sslSocket->bytesToWrite() == 0) {
+                                sslSocket->disconnectFromHost();
+                                sslSocket->deleteLater();
+                            }
+                        });
+                        return;
+                    }
+                }
+
+                sslSocket->disconnect();
+                sslSocket->startServerEncryption();
+                auto *connection = new Connection(serverSocket, m_requestHandler, this);
+                m_connections.insert(connection);
+                connect(connection, &Connection::closed, this, [this, connection] { removeConnection(connection); });
+            });
+        }
+        else
+        {
+            auto *connection = new Connection(serverSocket.release(), m_requestHandler, this);
+            m_connections.insert(connection);
+            connect(connection, &Connection::closed, this, [this, connection] { removeConnection(connection); });
+        }
     }
     catch (const std::bad_alloc &exception)
     {
