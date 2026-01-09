@@ -62,6 +62,7 @@ inline const Utils::Version<3, 2> API_VERSION {2, 15, 0};
 class APIController;
 class AuthController;
 class ClientDataStorage;
+class SearchJobManager;
 class WebApplication;
 
 namespace BitTorrent
@@ -282,6 +283,7 @@ private:
     QList<Http::Header> m_prebuiltHeaders;
 
     BitTorrent::TorrentCreationManager *m_torrentCreationManager = nullptr;
+    SearchJobManager *m_searchJobManager = nullptr;
     ClientDataStorage *m_clientDataStorage = nullptr;
 
     struct FailedLogin
