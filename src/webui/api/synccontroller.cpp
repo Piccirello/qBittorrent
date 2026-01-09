@@ -48,8 +48,8 @@
 #include "base/preferences.h"
 #include "base/utils/string.h"
 #include "apierror.h"
+#include "base/net/reverseresolution.h"
 #include "serialize/serialize_torrent.h"
-#include "webui/peerhostnameresolver.h"
 
 namespace
 {
@@ -441,12 +441,6 @@ namespace
         serializedTorrent[KEY_TORRENT_HAS_TRACKER_ERROR] = hasTrackerError;
         serializedTorrent[KEY_TORRENT_HAS_OTHER_ANNOUNCE_ERROR] = hasOtherAnnounceError;
     }
-}
-
-SyncController::SyncController(PeerHostNameResolver *peerHostNameResolver, IApplication *app, QObject *parent)
-    : APIController(app, parent)
-    , m_peerHostNameResolver {peerHostNameResolver}
-{
 }
 
 void SyncController::updateFreeDiskSpace(const qint64 freeDiskSpace)
@@ -879,7 +873,13 @@ void SyncController::torrentPeersAction()
         }
 
         if (resolvePeerHostNames && !useI2PSocket)
-            peer[KEY_PEER_HOST_NAME] = m_peerHostNameResolver->lookupHostName(pi.address().ip);
+        {
+            const QHostAddress &ip = pi.address().ip;
+            const QString hostName = Net::ReverseResolution::instance()->lookupCached(ip);
+            if (hostName.isEmpty())
+                Net::ReverseResolution::instance()->resolve(ip);
+            peer[KEY_PEER_HOST_NAME] = hostName;
+        }
 
         if (resolvePeerCountries && !useI2PSocket)
         {

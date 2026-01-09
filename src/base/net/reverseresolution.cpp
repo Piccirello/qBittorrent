@@ -35,6 +35,8 @@ const int CACHE_SIZE = 2048;
 
 using namespace Net;
 
+ReverseResolution *ReverseResolution::m_instance = nullptr;
+
 namespace
 {
     bool isUsefulHostName(const QString &hostname, const QHostAddress &ip)
@@ -43,8 +45,30 @@ namespace
     }
 }
 
-ReverseResolution::ReverseResolution(QObject *parent)
-    : QObject(parent)
+void ReverseResolution::initInstance()
+{
+    if (!m_instance)
+        m_instance = new ReverseResolution;
+}
+
+void ReverseResolution::freeInstance()
+{
+    delete m_instance;
+    m_instance = nullptr;
+}
+
+ReverseResolution *ReverseResolution::instance()
+{
+    return m_instance;
+}
+
+QString ReverseResolution::lookupCached(const QHostAddress &ip) const
+{
+    const QString *hostname = m_cache.object(ip);
+    return hostname ? *hostname : QString {};
+}
+
+ReverseResolution::ReverseResolution()
 {
     m_cache.setMaxCost(CACHE_SIZE);
 }
