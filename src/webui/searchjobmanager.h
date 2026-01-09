@@ -87,4 +87,5 @@ private:
     QHash<int, std::shared_ptr<SearchHandler>> m_searchHandlers;
     QSet<int> m_activeSearches;
     QHash<int, RestoredSearch> m_restoredSearches;
+    QList<int> m_searchOrder;  // Tracks insertion order (oldest first)
 };

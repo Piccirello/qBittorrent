@@ -87,6 +87,7 @@ int SearchJobManager::startSearch(const QString &pattern, const QString &categor
 
     m_searchHandlers.insert(id, searchHandler);
     m_activeSearches.insert(id);
+    m_searchOrder.append(id);
 
     saveSession();
 
@@ -130,6 +131,7 @@ bool SearchJobManager::deleteSearch(const int id)
     if (!found)
         return false;
 
+    m_searchOrder.removeOne(id);
     removeSearchResults(id);
     saveSession();
 
@@ -143,9 +145,7 @@ std::shared_ptr<SearchHandler> SearchJobManager::getSearch(const int id) const
 
 QList<int> SearchJobManager::allSearchIds() const
 {
-    QList<int> ids = m_searchHandlers.keys();
-    ids.append(m_restoredSearches.keys());
-    return ids;
+    return m_searchOrder;
 }
 
 int SearchJobManager::activeSearchCount() const
@@ -280,6 +280,7 @@ void SearchJobManager::loadSession()
         }
 
         m_restoredSearches.insert(tabId, restoredSearch);
+        m_searchOrder.append(tabId);
     }
 }
 
@@ -294,27 +295,16 @@ void SearchJobManager::saveSession() const
 
     QJsonArray tabsArray;
 
-    // Save live search handlers
-    for (auto it = m_searchHandlers.cbegin(); it != m_searchHandlers.cend(); ++it)
+    // Save searches in chronological order (oldest first)
+    for (const int searchId : m_searchOrder)
     {
-        const int tabId = it.key();
-        const std::shared_ptr<SearchHandler> &handler = it.value();
+        const QString pattern = getPattern(searchId);
+        if (pattern.isEmpty())
+            continue;
 
         tabsArray.append(QJsonObject {
-            {u"ID"_s, tabId},
-            {u"SearchPattern"_s, handler->pattern()}
-        });
-    }
-
-    // Save restored searches
-    for (auto it = m_restoredSearches.cbegin(); it != m_restoredSearches.cend(); ++it)
-    {
-        const int tabId = it.key();
-        const RestoredSearch &restored = it.value();
-
-        tabsArray.append(QJsonObject {
-            {u"ID"_s, tabId},
-            {u"SearchPattern"_s, restored.pattern}
+            {u"ID"_s, searchId},
+            {u"SearchPattern"_s, pattern}
         });
     }
 
