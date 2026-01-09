@@ -62,6 +62,7 @@
 #include "api/appcontroller.h"
 #include "api/authcontroller.h"
 #include "api/clientdatacontroller.h"
+#include "api/faviconcontroller.h"
 #include "api/logcontroller.h"
 #include "api/rsscontroller.h"
 #include "api/searchcontroller.h"
@@ -70,6 +71,7 @@
 #include "api/torrentscontroller.h"
 #include "api/transfercontroller.h"
 #include "clientdatastorage.h"
+#include "faviconcache.h"
 
 const int MAX_ALLOWED_FILESIZE = 10 * 1024 * 1024;
 const QString SESSION_COOKIE_NAME_PREFIX = u"QBT_SID_"_s;
@@ -161,6 +163,7 @@ WebApplication::WebApplication(IApplication *app, QObject *parent)
     , m_authController {new AuthController(this, app, this)}
     , m_torrentCreationManager {new BitTorrent::TorrentCreationManager(app, this)}
     , m_clientDataStorage {new ClientDataStorage(this)}
+    , m_faviconCache {new FaviconCache(this)}
 {
     declarePublicAPI(u"auth/login"_s);
 
@@ -830,6 +833,7 @@ void WebApplication::sessionStartImpl(const QString &sessionId, const bool useCo
 
     m_currentSession->registerAPIController(u"app"_s, new AppController(app(), m_currentSession));
     m_currentSession->registerAPIController(u"clientdata"_s, new ClientDataController(m_clientDataStorage, app(), m_currentSession));
+    m_currentSession->registerAPIController(u"favicon"_s, new FaviconController(m_faviconCache, app(), m_currentSession));
     m_currentSession->registerAPIController(u"log"_s, new LogController(app(), m_currentSession));
     m_currentSession->registerAPIController(u"torrentcreator"_s, new TorrentCreatorController(m_torrentCreationManager, app(), m_currentSession));
     m_currentSession->registerAPIController(u"rss"_s, new RSSController(app(), m_currentSession));

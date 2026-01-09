@@ -76,6 +76,7 @@ window.qBittorrent.Client ??= (() => {
             "show_search_engine",
             "show_status_bar",
             "show_top_toolbar",
+            "show_tracker_favicons",
             "speed_in_browser_title_bar",
             "torrent_creator",
             "use_alt_row_colors",
@@ -282,6 +283,10 @@ const TRACKERS_WARNING = "82a702c5-210c-412b-829f-97632d7557e9";
 
 // Map<trackerHost: String, Map<trackerURL: String, torrents: Set>>
 const trackerMap = new Map();
+// Map of hosts to their favicon data URLs (successful loads)
+const faviconCache = new Map();
+// Set of hosts for which favicon loading has failed (don't retry)
+const faviconFailedHosts = new Set();
 
 const clientData = window.qBittorrent.ClientData;
 
@@ -818,6 +823,42 @@ window.addEventListener("DOMContentLoaded", async (event) => {
                 case TRACKERS_WARNING:
                     span.lastElementChild.src = "images/tracker-warning.svg";
                     break;
+                default:
+                    // For regular tracker hostnames, use favicon proxy if enabled
+                    if (window.qBittorrent.ClientData.get("show_tracker_favicons") === true) {
+                        const img = span.lastElementChild;
+                        const cachedDataUrl = faviconCache.get(host);
+                        if (cachedDataUrl) {
+                            // Use cached data URL (no network request)
+                            img.src = cachedDataUrl;
+                        }
+                        else if (!faviconFailedHosts.has(host)) {
+                            // First request for this host
+                            img.src = `api/v2/favicon/index?host=${encodeURIComponent(host)}`;
+                            img.onload = function() {
+                                // Cache as data URL to avoid future requests
+                                const canvas = document.createElement("canvas");
+                                canvas.width = this.naturalWidth || 16;
+                                canvas.height = this.naturalHeight || 16;
+                                const ctx = canvas.getContext("2d");
+                                ctx.drawImage(this, 0, 0);
+                                try {
+                                    faviconCache.set(host, canvas.toDataURL());
+                                }
+                                catch (e) {
+                                    // CORS error - just let browser cache handle it
+                                    faviconCache.set(host, this.src);
+                                }
+                            };
+                            img.onerror = function() {
+                                faviconFailedHosts.add(host);
+                                this.onerror = null;
+                                this.src = "images/trackers.svg";
+                            };
+                        }
+                    }
+                    break;
+
             }
 
             return trackerFilterItem;

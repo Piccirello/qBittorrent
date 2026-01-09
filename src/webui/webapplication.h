@@ -62,6 +62,7 @@ inline const Utils::Version<3, 2> API_VERSION {2, 15, 0};
 class APIController;
 class AuthController;
 class ClientDataStorage;
+class FaviconCache;
 class WebApplication;
 
 namespace BitTorrent
@@ -283,6 +284,7 @@ private:
 
     BitTorrent::TorrentCreationManager *m_torrentCreationManager = nullptr;
     ClientDataStorage *m_clientDataStorage = nullptr;
+    FaviconCache *m_faviconCache = nullptr;
 
     struct FailedLogin
     {
