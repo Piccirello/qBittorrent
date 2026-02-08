@@ -36,7 +36,10 @@
 #include <QObject>
 
 #include "base/3rdparty/expected.hpp"
+#include "base/path.h"
 #include "base/search/searchhandler.h"
+
+class QTimer;
 
 class SearchJobManager final : public QObject
 {
@@ -61,10 +64,25 @@ public:
     std::optional<JobInfo> getJobInfo(int id) const;
     QList<JobInfo> getAllJobInfos() const;
 
+private slots:
+    void onPreferencesChanged();
+
 private:
     int generateSearchId() const;
+    void loadSession();
+    void saveSession() const;
+    void saveSearchResults(int searchId) const;
+    void scheduleSaveResults(int searchId);
+    void removeSearchResults(int searchId) const;
+    void removeAllResultFiles() const;
+    void removeAllData() const;
+    Path makeDataFilePath(const QString &fileName) const;
+
+    bool m_storeSearchJobs = false;
+    bool m_storeSearchJobResults = false;
 
     QHash<int, std::shared_ptr<SearchHandler>> m_searchHandlers;
     QHash<int, JobInfo> m_jobs;
     QList<int> m_searchOrder;  // Tracks insertion order (oldest first)
+    QHash<int, QTimer *> m_resultSaveTimers;
 };
